@@ -1,6 +1,28 @@
 module ParameterSpacesDistributionsExt
 
-using ParameterSpaces, Distributions
+using Distributions
+using ParameterSpaces: AbstractParameterSpace,
+                       Between,
+                       Id,
+                       Lower,
+                       NIG,
+                       Neg,
+                       NonNeg,
+                       Ordered,
+                       Pos,
+                       PosOrdered,
+                       PosVec,
+                       Prefixed,
+                       Prob,
+                       ProbOpen,
+                       ProbOpenLeft,
+                       ProbOpenRight,
+                       ProbVec,
+                       RealMat,
+                       RealVec,
+                       SPD,
+                       Simplex
+import ParameterSpaces: param_space
 
 # ---------------------------------------------------------------------------
 # Distribution integration helpers
