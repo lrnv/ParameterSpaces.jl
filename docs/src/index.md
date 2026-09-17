@@ -60,7 +60,6 @@ BoundedOpenRight
 Ordered
 PosOrdered
 Between
-BilinearQuad
 ```
 
 ### Vector, matrix, and structured spaces
@@ -137,14 +136,9 @@ a scalar parameter is a scalar, a vector parameter is a vector, a structured
 matrix parameter is a full matrix, and a Cartesian product is a tuple of
 logical parameter values.
 
-Use `dimension` for the optimizer dimension, `constrained_dimension` for the
-number of independent scalar constrained coordinates, and `parameter_symbols`
+Use `dimension` for the optimizer dimension, and `parameter_symbols`
 for logical parameter names. `constrained_namedtuple(p, θ)` combines those
 logical names with the natural constrained values.
-
-```@docs
-constrained_dimension
-```
 
 ### Automatic differentiation
 

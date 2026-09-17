@@ -64,11 +64,4 @@ using ForwardDiff
         @test_throws DomainError unconstrain(Correlation(:R, 2), [1.0 1.2; 1.2 1.0])
     end
 
-    @testset "coupled bilinear space" begin
-        p = BilinearQuad(:x, :y, (0.0, 0.0), (1.5, -0.5), (0.0, 0.5), (1.0, 0.0))
-        f(x) = sum(constrain(p, x))
-        g = ForwardDiff.gradient(f, [0.2, -0.3])
-        @test length(g) == 2
-        @test all(isfinite, g)
-    end
 end

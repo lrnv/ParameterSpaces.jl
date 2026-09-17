@@ -55,7 +55,7 @@ end
         @test nt == (; μ=0.5, σ=2.0, β=[3.0, 4.0])
     end
 
-    @testset "ordered, between, and bilinear spaces" begin
+    @testset "ordered and between" begin
         po = Ordered(:a, :b)
         ηo = constrain(po, [1.0, log(2.0)])
         @test ηo == (1.0, 3.0)
@@ -65,13 +65,6 @@ end
         ηb = constrain(pb, [1.0, log(4.0), 0.0])
         @test collect(ηb) ≈ [1.0, 5.0, 3.0]
         @test unconstrain(pb, ηb) ≈ [1.0, log(4.0), 0.0]
-
-        pq = BilinearQuad(:x, :y, (0.0, 0.0), (1.5, -0.5), (0.0, 0.5), (1.0, 0.0))
-        θq = [0.3, -0.4]
-        ηq = constrain(pq, θq)
-        @test ηq isa Tuple
-        @test length(ηq) == 2
-        @test unconstrain(pq, ηq) ≈ θq
     end
 
     @testset "simplex values are vectors" begin
