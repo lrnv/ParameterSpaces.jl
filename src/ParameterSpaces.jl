@@ -504,9 +504,8 @@ function constrain(p::ProductParameterSpace, θ)
     return _constrain_product(p, θ, 0)
 end
 
-_constrain_product(::Tuple{}, θ, offset) = ()
-
-function _constrain_product(p::Tuple{Q,Vararg{AbstractParameterSpace}}, θ, offset) where {Q<:AbstractParameterSpace}
+function _constrain_product(p::Tuple, θ, offset)
+    isempty(p) && return ()
     q = first(p)
     n = dimension(q)
     ηq = constrain(q, view(θ, (offset + 1):(offset + n)))
@@ -528,14 +527,7 @@ function unconstrain(p::ProductParameterSpace, η::Tuple)
     return _concatenate_vectors(values)
 end
 
-function unconstrain(p, η::NamedTuple)
-    names = parameter_symbols(p)
-    keys(η) == names || throw(ArgumentError(
-        "expected constrained parameter names $names, got $(keys(η))",
-    ))
-    vals = Tuple(Base.values(η))
-    return unconstrain(p, _from_parameter_values(p, vals))
-end
+
 
 # ---------------------------------------------------------------------------
 # Coupled scalar spaces
