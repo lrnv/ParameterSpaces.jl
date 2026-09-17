@@ -116,7 +116,7 @@ p = param_space(X)
 
 ## Transformation interface
 
-The public transformation interface is intentionally first-order and small:
+The public transformation interface is intentionally small:
 
 ```julia
 η = constrain(p, θ)
@@ -132,6 +132,10 @@ Use `dimension` for the optimizer dimension, `constrained_dimension` for the
 number of independent scalar constrained coordinates, and `parameter_symbols`
 for logical parameter names. `constrained_namedtuple(p, θ)` combines those
 logical names with the natural constrained values.
+
+```@docs
+constrained_dimension
+```
 
 ### Automatic differentiation
 
