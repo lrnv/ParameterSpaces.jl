@@ -1,10 +1,13 @@
 name = "ParameterSpaces"
 uuid = "4f407bf5-e3e8-4a0e-b0aa-de5e22a062cc"
 version = "0.0.1"
-authors = ["Oskar Laverny <oskar.laverny@univ-amu.fr> and contributors"]
+authors = ["Oskar Laverny"]
 
-[deps]
+[weakdeps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+
+[extensions]
+ParameterSpacesDistributionsExt = "Distributions"
 
 [compat]
 Aqua = "0.8"
@@ -15,6 +18,7 @@ julia = "1.10"
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 
 [targets]
-test = ["Aqua", "Test"]
+test = ["Aqua", "Test", "Distributions"]

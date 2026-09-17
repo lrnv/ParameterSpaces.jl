@@ -8,6 +8,45 @@ using Test
 end
 
 @testset "ParameterSpaces.jl" begin
+        @testset "SPD parameter space" begin
+        p = ParameterSpaces.SPD(:Σ, 3)
+
+        @test dimension(p) == 6
+        @test constrained_dimension(p) == 6
+        @test parameter_symbols(p) == (
+            :Σ_1_1,
+            :Σ_2_1, :Σ_2_2,
+            :Σ_3_1, :Σ_3_2, :Σ_3_3,
+        )
+
+        θ = [log(1.2), 0.2, log(0.8), -0.1, 0.3, log(1.5)]
+        η, J = constrain_with_jac(p, θ)
+        θ₂, Jinv = unconstrain_with_jac(p, η)
+
+        @test θ₂ ≈ θ
+        @test Jinv * J ≈ [
+            1.0  0.0  0.0  0.0  0.0  0.0
+            0.0  1.0  0.0  0.0  0.0  0.0
+            0.0  0.0  1.0  0.0  0.0  0.0
+            0.0  0.0  0.0  1.0  0.0  0.0
+            0.0  0.0  0.0  0.0  1.0  0.0
+            0.0  0.0  0.0  0.0  0.0  1.0
+        ]
+
+        @test isapprox(
+            logabsdet_constrain_jac(p, θ) +
+            logabsdet_unconstrain_jac(p, η),
+            0.0; atol=1e-12, rtol=0.0,
+        )
+
+        @test_throws DomainError unconstrain(
+            ParameterSpaces.SPD(:Σ, 2),
+            [1.0, 2.0, 1.0],
+        )
+    end
+end
+
+@testset "Distributions.jl extension" begin
 
     @testset "Normal" begin
         d = Normal(0.0, 1.0)
@@ -786,43 +825,6 @@ end
         @test_throws DomainError unconstrain(p, [0.0, 0.5, 0.5, 1.0])
         @test_throws DomainError unconstrain(p, [0.0, 1.0, -1.0, 1.0])
         @test_throws DomainError unconstrain(p, [0.0, 2.0, 0.5, 0.0])
-    end
-
-    @testset "SPD parameter space" begin
-        p = ParameterSpaces.SPD(:Σ, 3)
-
-        @test dimension(p) == 6
-        @test constrained_dimension(p) == 6
-        @test parameter_symbols(p) == (
-            :Σ_1_1,
-            :Σ_2_1, :Σ_2_2,
-            :Σ_3_1, :Σ_3_2, :Σ_3_3,
-        )
-
-        θ = [log(1.2), 0.2, log(0.8), -0.1, 0.3, log(1.5)]
-        η, J = constrain_with_jac(p, θ)
-        θ₂, Jinv = unconstrain_with_jac(p, η)
-
-        @test θ₂ ≈ θ
-        @test Jinv * J ≈ [
-            1.0  0.0  0.0  0.0  0.0  0.0
-            0.0  1.0  0.0  0.0  0.0  0.0
-            0.0  0.0  1.0  0.0  0.0  0.0
-            0.0  0.0  0.0  1.0  0.0  0.0
-            0.0  0.0  0.0  0.0  1.0  0.0
-            0.0  0.0  0.0  0.0  0.0  1.0
-        ]
-
-        @test isapprox(
-            logabsdet_constrain_jac(p, θ) +
-            logabsdet_unconstrain_jac(p, η),
-            0.0; atol=1e-12, rtol=0.0,
-        )
-
-        @test_throws DomainError unconstrain(
-            ParameterSpaces.SPD(:Σ, 2),
-            [1.0, 2.0, 1.0],
-        )
     end
 
 

@@ -12,25 +12,26 @@
 
 ---
 
-`ParameterSpaces.jl` associates distributions from
-[`Distributions.jl`](https://github.com/JuliaStats/Distributions.jl) with
-unconstrained Euclidean parameter spaces suitable for numerical optimization.
+`ParameterSpaces.jl` provides transformations between
 
-The package provides transformations between
-
-- unconstrained optimization coordinates `θ ∈ ℝⁿ`, and
-- the continuous constrained parameters `η` used by a distribution,
+- unconstrained optimization coordinates `θ ∈ ℝⁿ`, parameters of a given struct, and
+- the continuous constrained parameters `η`, usable by an unconstraint optimisation routine,
 
 together with analytic Jacobians.
+
+It has been build at the start to associates distributions from
+[`Distributions.jl`](https://github.com/JuliaStats/Distributions.jl) with
+unconstrained Euclidean parameter spaces suitable for numerical optimization.
 
 The main convention is
 
 ```julia
+p = param_space(object)
 η = constrain(p, θ)
 θ = unconstrain(p, η)
 ```
 
-where `p = param_space(d)` for a distribution instance `d`.
+where `object` is the given struct. In particular, through its extension for Distributions.jl, all `object<:Distribution` from this package are supported.
 
 ## Installation
 
@@ -42,8 +43,7 @@ Pkg.add(url="https://github.com/lrnv/ParameterSpaces.jl")
 Then:
 
 ```julia
-using Distributions
-using ParameterSpaces
+using ParameterSpaces, Distributions
 ```
 
 ## Quick start
@@ -79,8 +79,8 @@ optimization code.
 p = param_space(d)
 ```
 
-Return the parameter space associated with a `Distributions.jl` distribution
-instance.
+Return the parameter space associated with a given object. Only `Distributions.jl` distribution
+instance are provided through an extension.
 
 The distribution instance matters because the dimension or structure of the
 parameter space can depend on the distribution itself, for example for
