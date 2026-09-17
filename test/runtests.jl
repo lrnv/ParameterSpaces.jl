@@ -136,6 +136,81 @@ end
         end
     end
 
+    @testset "mapping smoke tests" begin
+        distributions = (
+            Cauchy(0.0, 1.0),
+            LogNormal(0.0, 1.0),
+            LogitNormal(0.0, 1.0),
+            Rayleigh(1.0),
+            Chi(2.0),
+            Chisq(2.0),
+            TDist(3.0),
+            FDist(2.0, 3.0),
+            BernoulliLogit(0.3),
+            BetaBinomial(10, 2.0, 3.0),
+            BetaPrime(2.0, 3.0),
+            Laplace(0.0, 1.0),
+            Logistic(0.0, 1.0),
+            Gumbel(0.0, 1.0),
+            Levy(0.0, 1.0),
+            Frechet(2.0, 3.0),
+            InverseGamma(2.0, 3.0),
+            InverseGaussian(2.0, 3.0),
+            Kumaraswamy(2.0, 3.0),
+            LogLogistic(2.0, 3.0),
+            Pareto(2.0, 3.0),
+            Weibull(2.0, 3.0),
+            GeneralizedExtremeValue(0.0, 1.0, 0.2),
+            GeneralizedPareto(0.0, 1.0, 0.2),
+            JohnsonSU(0.0, 1.0, 0.0, 1.0),
+            Lindley(1.0),
+            Semicircle(1.0),
+            NormalCanon(0.0, 1.0),
+            NoncentralBeta(2.0, 3.0, 0.5),
+            NoncentralChisq(2.0, 0.5),
+            NoncentralF(2.0, 3.0, 0.5),
+            NoncentralT(3.0, 0.5),
+            PGeneralizedGaussian(0.0, 1.0, 2.0),
+            Rician(0.5, 1.0),
+            SkewNormal(0.0, 1.0, 0.5),
+            VonMises(0.0, 1.0),
+            Geometric(0.4),
+            NegativeBinomial(2.0, 0.4),
+            Poisson(1.5),
+            Skellam(1.0, 2.0),
+            Dirac(0.0),
+            Erlang(2, 1.0),
+            PoissonBinomial([0.2, 0.5, 0.8]),
+            TriangularDist(0.0, 2.0, 1.0),
+            NormalInverseGaussian(0.5, 2.0, 0.5, 1.5),
+        )
+
+        for d in distributions
+            p = param_space(d)
+            θ = unconstrained_example(p)
+            η = constrain(p, θ)
+            @test unconstrain(p, η) ≈ θ
+            @test keys(constrained_namedtuple(p, θ)) == parameter_symbols(p)
+        end
+    end
+
+    @testset "structural-only parameter spaces" begin
+        for d in (
+            Chernoff(),
+            DiscreteUniform(1, 4),
+            Hypergeometric(5, 6, 3),
+            Kolmogorov(),
+            KSDist(10),
+            KSOneSided(10),
+        )
+            p = param_space(d)
+            @test dimension(p) == 0
+            @test parameter_symbols(p) == ()
+            @test constrained_example(p) == ()
+            @test unconstrain(p, ()) == Float64[]
+        end
+    end
+
     @testset "Dirichlet keeps one vector parameter" begin
         p = param_space(Dirichlet([1.0, 2.0, 3.0]))
         @test parameter_symbols(p) == (:α,)
@@ -176,6 +251,11 @@ end
         @test size(ηcanon[1]) == (2,)
         @test size(ηcanon[2]) == (2, 2)
         @test unconstrain(pcanon, ηcanon) ≈ unconstrained_example(pcanon)
+
+        Xlog = MvLogNormal(MvNormal([0.0, 0.3], [1.0 0.2; 0.2 1.5]))
+        plog = param_space(Xlog)
+        @test parameter_symbols(plog) == (:μ, :Σ)
+        @test size(constrained_example(plog)[2]) == (2, 2)
     end
 
     @testset "matrix-variate shapes" begin
@@ -189,6 +269,54 @@ end
         @test size(η[1]) == (2, 3)
         @test size(η[2]) == (2, 2)
         @test size(η[3]) == (3, 3)
+
+        S = [2.0 0.2; 0.2 1.5]
+        for d in (
+            Wishart(4.0, S),
+            InverseWishart(4.0, S),
+            MatrixTDist(5.0, zeros(2, 2), S, S),
+            MatrixFDist(3.0, 4.0, S),
+        )
+            p = param_space(d)
+            θ = unconstrained_example(p)
+            @test unconstrain(p, constrain(p, θ)) ≈ θ
+        end
+    end
+
+    @testset "wrappers, mixtures, and products" begin
+        wrapped = (
+            Distributions.AffineDistribution(2.0, 3.0, Gamma(2.0, 1.0)),
+            truncated(Normal(0.0, 1.0), -1.0, 2.0),
+            censored(Normal(0.0, 1.0), -1.0, 2.0),
+            OrderStatistic(Gamma(2.0, 1.0), 10, 3),
+            JointOrderStatistics(Normal(), 10, (1, 5, 10)),
+        )
+        for d in wrapped
+            p = param_space(d)
+            θ = unconstrained_example(p)
+            @test unconstrain(p, constrain(p, θ)) ≈ θ
+        end
+
+        dmix = MixtureModel(
+            Normal[Normal(-1.0, 1.0), Normal(2.0, 0.5)],
+            [0.4, 0.6],
+        )
+        pmix = param_space(dmix)
+        @test parameter_symbols(pmix) == (:component1_μ, :component1_σ, :component2_μ, :component2_σ, :π)
+        θmix = unconstrained_example(pmix)
+        @test unconstrain(pmix, constrain(pmix, θmix)) ≈ θmix
+
+        dprod = product_distribution(UnivariateDistribution[Normal(), Exponential()])
+        pprod = param_space(dprod)
+        @test parameter_symbols(pprod) == (:component1_μ, :component1_σ, :component2_θ)
+        θprod = unconstrained_example(pprod)
+        @test unconstrain(pprod, constrain(pprod, θprod)) ≈ θprod
+
+        dnamed = product_distribution((x=Normal(), y=Gamma(2.0, 1.0)))
+        pnamed = param_space(dnamed)
+        @test parameter_symbols(pnamed) == (:x_μ, :x_σ, :y_α, :y_θ)
+        θnamed = unconstrained_example(pnamed)
+        @test unconstrain(pnamed, constrain(pnamed, θnamed)) ≈ θnamed
     end
 end
 
