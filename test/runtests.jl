@@ -63,7 +63,7 @@ end
 
         pb = Between(:a, :b, :c)
         ηb = constrain(pb, [1.0, log(4.0), 0.0])
-        @test ηb ≈ (1.0, 5.0, 3.0)
+        @test collect(ηb) ≈ [1.0, 5.0, 3.0]
         @test unconstrain(pb, ηb) ≈ [1.0, log(4.0), 0.0]
 
         pq = BilinearQuad(:x, :y, (0.0, 0.0), (1.5, -0.5), (0.0, 0.5), (1.0, 0.0))
