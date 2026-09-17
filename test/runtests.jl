@@ -145,7 +145,7 @@ end
         @test constrained_namedtuple(p, log.([1.0, 2.0, 3.0])) == (; α=α)
     end
 
-    @testset "MvNormal keeps vector and matrix parameters" begin
+    @testset "multivariate normal families keep natural parameter shapes" begin
         Σ0 = [1.0 0.2 0.1; 0.2 1.5 0.3; 0.1 0.3 2.0]
         X = MvNormal(zeros(3), Σ0)
         p = param_space(X)
@@ -167,6 +167,15 @@ end
         @test keys(nt) == (:μ, :Σ)
         @test nt.μ == zeros(3)
         @test nt.Σ ≈ [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
+
+        Xcanon = MvNormalCanon([0.1, -0.2], [2.0 0.2; 0.2 1.2])
+        pcanon = param_space(Xcanon)
+        @test parameter_symbols(pcanon) == (:h, :J)
+        @test dimension(pcanon) == 5
+        ηcanon = constrained_example(pcanon)
+        @test size(ηcanon[1]) == (2,)
+        @test size(ηcanon[2]) == (2, 2)
+        @test unconstrain(pcanon, ηcanon) ≈ unconstrained_example(pcanon)
     end
 
     @testset "matrix-variate shapes" begin
