@@ -4,20 +4,21 @@ CurrentModule = ParameterSpaces
 
 # ParameterSpaces
 
-`ParameterSpaces.jl` provides a small public vocabulary for describing
-constrained parameter spaces and mapping them to unconstrained Euclidean
-coordinates for optimization.
-
-A space can be constructed directly:
+`ParameterSpaces.jl` describes constrained model parameters and maps a flat
+unconstrained vector to the parameters in their natural Julia representation.
+The unconstrained side is deliberately simple for optimizers; the constrained
+side preserves scalars, vectors, matrices, and coupled tuples.
 
 ```julia
 using ParameterSpaces
 
 p = (Id(:μ), Pos(:σ), Simplex(:weights, 3))
-η = constrain(p, [0.0, 0.0, 0.0, 0.0])
+θ = zeros(dimension(p))
+η = constrain(p, θ)
+# (0.0, 1.0, [1/3, 1/3, 1/3])
 ```
 
-or associated with an arbitrary object by extending [`param_space`](@ref):
+Associate a space with an arbitrary object by extending [`param_space`](@ref):
 
 ```julia
 import ParameterSpaces: param_space
@@ -29,8 +30,8 @@ end
 param_space(m::MyModel) = (Id(:μ), Pos(:σ), Simplex(:weights, m.n))
 ```
 
-The bundled `Distributions.jl` package extension uses exactly this mechanism.
-The core package itself has no dependency on `Distributions.jl`.
+The bundled `Distributions.jl` extension uses exactly this mechanism. The core
+package itself has no dependency on `Distributions.jl`.
 
 ## Space constructors
 
@@ -79,13 +80,9 @@ SPD
 Prefixed
 ```
 
-Tuples of parameter spaces form Cartesian product spaces. For example,
-`(Id(:μ), Pos(:σ))` describes an unconstrained location and a positive scale.
-
-`BilinearQuad` is useful when two parameters occupy a coupled quadrilateral
-rather than an axis-aligned box. Its four corners define a generic bilinear
-chart; no application-specific geometry needs to live outside
-`ParameterSpaces.jl`.
+Tuples of spaces form Cartesian products. Vector and matrix spaces remain one
+logical parameter each: `parameter_symbols(RealVec(:μ, 3)) == (:μ,)`, and
+`parameter_symbols(SPD(:Σ, 3)) == (:Σ,)`.
 
 ## Object mapping
 
@@ -93,10 +90,11 @@ chart; no application-specific geometry needs to live outside
 param_space
 ```
 
-### Distributions.jl types
+### Distributions.jl
 
-When the parameter space is completely determined by a `Distributions.jl`
-distribution type, the extension supports both the type and an instance:
+When a space is determined by a `Distributions.jl` type, both type-level and
+instance-level mappings are available. Runtime shape information still requires
+an instance for multivariate, matrix-variate, mixture, and similar models.
 
 ```@example distribution-types
 using ParameterSpaces
@@ -105,49 +103,41 @@ using Distributions
 parameter_symbols(param_space(Normal))
 ```
 
+For structured parameters the constrained result has the constructor-level
+shape:
+
 ```@example distribution-types
-parameter_symbols(param_space(typeof(Gamma(2.0, 3.0))))
+X = MvNormal(zeros(3), [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0])
+p = param_space(X)
+θ = unconstrained_example(p)
+η = constrained_example(p)
+(size(η[1]), size(η[2]), keys(constrained_namedtuple(p, θ)))
 ```
-
-The same type-level API is available for distributions whose omitted constructor
-arguments are purely structural, for example `Binomial` and `Erlang`.
-
-An instance is still required when the space depends on stored values or runtime
-shape information. Examples include `Dirichlet`, `Categorical`, `Multinomial`,
-`PoissonBinomial`, multivariate and matrix-variate distributions, mixtures, and
-wrappers whose space depends on their contained distribution.
 
 ## Transformation interface
 
-Once a space `p` is available, the main public operations are:
+The public transformation interface is intentionally first-order and small:
 
 ```julia
 η = constrain(p, θ)
 θ = unconstrain(p, η)
-
-J = constrain_jac(p, θ)
-Jinv = unconstrain_jac(p, η)
-
-η, J = constrain_with_jac(p, θ)
-θ, Jinv = unconstrain_with_jac(p, η)
 ```
 
-Use `dimension`, `constrained_dimension`, and `parameter_symbols` to inspect the
-space, and `logabsdet_constrain_jac` / `logabsdet_unconstrain_jac` for
-change-of-variables calculations when the Jacobian is square.
+`θ` is always a flat vector. `η` has the natural constrained representation:
+a scalar parameter is a scalar, a vector parameter is a vector, an SPD
+parameter is a full symmetric matrix, and a Cartesian product is a tuple of
+logical parameter values.
 
-### ForwardDiff integration
+Use `dimension` for the optimizer dimension, `constrained_dimension` for the
+number of independent scalar constrained coordinates, and `parameter_symbols`
+for logical parameter names. `constrained_namedtuple(p, θ)` combines those
+logical names with the natural constrained values.
 
-When `ForwardDiff.jl` is loaded together with `ParameterSpaces.jl`, the optional
-ForwardDiff extension uses two complementary paths through `constrain`.
-Separable scalar and elementwise maps are traced directly, and Cartesian
-products are propagated block by block without materializing a global block-
-diagonal Jacobian. Genuinely coupled spaces continue to propagate partials via
-the analytical Jacobian supplied by the parameter space. This keeps one
-analytical source of truth where it matters while avoiding Jacobian allocation
-overhead for tiny scalar products in optimizer hot loops.
+### Automatic differentiation
 
-No additional user API is required:
+There is no differentiation-specific extension. `constrain` is implemented
+with ordinary generic Julia operations, so AD packages can differentiate
+through it directly.
 
 ```julia
 using ForwardDiff, ParameterSpaces
@@ -155,15 +145,11 @@ using ForwardDiff, ParameterSpaces
 p = (Id(:μ), Pos(:σ))
 θ = [0.3, -0.2]
 
-ForwardDiff.jacobian(x -> constrain(p, x), θ)
-# equivalent to constrain_jac(p, θ)
+ForwardDiff.gradient(θ) do x
+    μ, σ = constrain(p, x)
+    μ^2 + σ
+end
 ```
-
-The rule also composes with nested ForwardDiff differentiation, so higher-order
-derivatives of objectives that call `constrain` remain available. `unconstrain`
-keeps its ordinary implementation; it is primarily used to initialize optimizer
-coordinates from constrained parameters rather than inside the optimization
-hot path.
 
 ```@index
 ```
