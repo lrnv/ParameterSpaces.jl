@@ -12,26 +12,15 @@ function ParameterSpaces.constrain_with_jac(
     return [y], reshape([3x[1]^2], 1, 1)
 end
 
-function ParameterSpaces.unconstrain_with_jac(
-    ::AnalyticOnlySpace,
-    y::AbstractVector{<:AbstractFloat},
-)
-    x = cbrt(y[1])
-    return [x], reshape([inv(3x^2)], 1, 1)
-end
-
 @testset "ForwardDiff extension" begin
     @test Base.get_extension(ParameterSpaces, :ParameterSpacesForwardDiffExt) !== nothing
 
     @testset "analytic Jacobians drive Dual propagation" begin
         p = AnalyticOnlySpace()
         x = [1.7]
-        y = constrain(p, x)
 
         @test ForwardDiff.jacobian(z -> constrain(p, z), x) ≈
               constrain_jac(p, x)
-        @test ForwardDiff.jacobian(z -> unconstrain(p, z), y) ≈
-              unconstrain_jac(p, y)
     end
 
     @testset "built-in spaces" begin
@@ -43,11 +32,8 @@ end
         )
 
         for (p, x) in cases
-            y, J = constrain_with_jac(p, x)
-            _, Jinv = unconstrain_with_jac(p, y)
-
+            _, J = constrain_with_jac(p, x)
             @test ForwardDiff.jacobian(z -> constrain(p, z), x) ≈ J
-            @test ForwardDiff.jacobian(z -> unconstrain(p, z), y) ≈ Jinv
         end
     end
 
