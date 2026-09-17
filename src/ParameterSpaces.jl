@@ -884,7 +884,7 @@ function _bilinear_inverse(p::BilinearQuad, y)
         end
     end
     isempty(candidates) && throw(DomainError(y, "point lies outside the quadrilateral"))
-    candidate = candidates[argmin(c -> c.residual, candidates)]
+    candidate = argmin(c -> c.residual, candidates)
     u = clamp(candidate.u, zero(candidate.u), one(candidate.u))
     v = clamp(candidate.v, zero(candidate.v), one(candidate.v))
     return u, v
