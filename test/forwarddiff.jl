@@ -12,6 +12,65 @@ function ParameterSpaces.constrain_with_jac(
     return [y], reshape([3x[1]^2], 1, 1)
 end
 
+@testset "Additional core spaces" begin
+    @testset "closed lower bound" begin
+        p = LowerClosed(:x, 1.0)
+        @test constrain(p, [log(2.0)]) ≈ [3.0]
+        @test unconstrain(p, [1.0]) == [-Inf]
+        @test_throws DomainError unconstrain(p, [0.9])
+    end
+
+    @testset "bounded scalar intervals" begin
+        p = Bounded(:x, -2.0, 4.0)
+        @test constrain(p, [0.0]) ≈ [1.0]
+        @test unconstrain(p, [-2.0]) == [-Inf]
+        @test unconstrain(p, [4.0]) == [Inf]
+        @test unconstrain(p, [1.0]) ≈ [0.0]
+
+        @test_throws DomainError unconstrain(BoundedOpen(:x, -2.0, 4.0), [-2.0])
+        @test_throws DomainError unconstrain(BoundedOpen(:x, -2.0, 4.0), [4.0])
+        @test_throws DomainError unconstrain(BoundedOpenLeft(:x, -2.0, 4.0), [-2.0])
+        @test unconstrain(BoundedOpenLeft(:x, -2.0, 4.0), [4.0]) == [Inf]
+        @test unconstrain(BoundedOpenRight(:x, -2.0, 4.0), [-2.0]) == [-Inf]
+        @test_throws DomainError unconstrain(BoundedOpenRight(:x, -2.0, 4.0), [4.0])
+    end
+
+    @testset "bilinear quadrilateral" begin
+        p = BilinearQuad(
+            :θ₁,
+            :θ₂,
+            (0.0, 0.0),
+            (1.5, -0.5),
+            (0.0, 0.5),
+            (1.0, 0.0),
+        )
+        x = [-0.7, 0.9]
+        y, J = constrain_with_jac(p, x)
+        x₂, Jinv = unconstrain_with_jac(p, y)
+
+        @test parameter_symbols(p) == (:θ₁, :θ₂)
+        @test x₂ ≈ x
+        @test Jinv * J ≈ [1.0 0.0; 0.0 1.0]
+        @test isapprox(
+            logabsdet_constrain_jac(p, x) + logabsdet_unconstrain_jac(p, y),
+            0.0;
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+        @test unconstrain(p, [0.0, 0.0]) == [-Inf, -Inf]
+        @test_throws DomainError unconstrain(p, [2.0, 2.0])
+        @test_throws ArgumentError BilinearQuad(
+            :x,
+            :y,
+            (0.0, 0.0),
+            (1.0, 0.0),
+            (1.0, 1.0),
+            (0.0, 1.0),
+        )
+    end
+end
+
 @testset "ForwardDiff extension" begin
     @test Base.get_extension(ParameterSpaces, :ParameterSpacesForwardDiffExt) !== nothing
 
@@ -27,6 +86,16 @@ end
         cases = (
             (Pos(:x), [0.3]),
             ((Id(:μ), Pos(:σ)), [0.2, -0.4]),
+            ((Pos(:θ), LowerClosed(:δ, 1.0)), [0.2, -0.4]),
+            (Bounded(:ρ, -0.5, 1.0), [0.3]),
+            (BilinearQuad(
+                :θ₁,
+                :θ₂,
+                (0.0, 0.0),
+                (1.5, -0.5),
+                (0.0, 0.5),
+                (1.0, 0.0),
+            ), [-0.4, 0.6]),
             (Simplex(:p, 3), [0.2, -0.4]),
             (SPD(:Σ, 2), [log(1.2), 0.3, log(0.8)]),
         )
