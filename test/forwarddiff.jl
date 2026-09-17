@@ -16,7 +16,12 @@ using ForwardDiff
         p = PosVec(:x, 3)
         θ = [0.1, -0.2, 0.3]
         J = ForwardDiff.jacobian(x -> constrain(p, x), θ)
-        @test J ≈ Matrix(Diagonal(exp.(θ)))
+        expected = [
+            exp(θ[1])  0.0        0.0
+            0.0        exp(θ[2])  0.0
+            0.0        0.0        exp(θ[3])
+        ]
+        @test J ≈ expected
     end
 
     @testset "simplex" begin

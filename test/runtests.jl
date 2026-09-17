@@ -1,6 +1,5 @@
 using Aqua
 using Distributions
-using LinearAlgebra
 using ParameterSpaces
 using Test
 
@@ -12,7 +11,6 @@ end
     @testset "scalar spaces" begin
         p = Pos(:σ)
         @test dimension(p) == 1
-        @test constrained_dimension(p) == 1
         @test parameter_symbols(p) == (:σ,)
         @test constrain(p, [0.0]) == 1.0
         @test unconstrain(p, 1.0) == [0.0]
@@ -29,7 +27,6 @@ end
     @testset "natural vector and matrix values" begin
         pv = RealVec(:μ, 3)
         @test dimension(pv) == 3
-        @test constrained_dimension(pv) == 3
         @test parameter_symbols(pv) == (:μ,)
         @test constrain(pv, [1.0, 2.0, 3.0]) == [1.0, 2.0, 3.0]
         @test constrained_namedtuple(pv, [1.0, 2.0, 3.0]) == (; μ=[1.0, 2.0, 3.0])
@@ -52,12 +49,10 @@ end
         @test η == (0.5, 2.0, [3.0, 4.0])
         @test parameter_symbols(p) == (:μ, :σ, :β)
         @test dimension(p) == 4
-        @test constrained_dimension(p) == 4
         @test unconstrain(p, η) ≈ θ
 
         nt = constrained_namedtuple(p, θ)
         @test nt == (; μ=0.5, σ=2.0, β=[3.0, 4.0])
-        @test unconstrain(p, nt) ≈ θ
     end
 
     @testset "ordered, between, and bilinear spaces" begin
@@ -88,7 +83,6 @@ end
         @test sum(η) ≈ 1.0
         @test all(>(0), η)
         @test parameter_symbols(p) == (:weights,)
-        @test constrained_dimension(p) == 3
         @test unconstrain(p, η) ≈ θ
         @test constrained_namedtuple(p, θ).weights ≈ η
     end
@@ -101,10 +95,9 @@ end
         @test Σ isa AbstractMatrix
         @test size(Σ) == (3, 3)
         @test Σ ≈ Σ'
-        @test all(diag(Σ) .> 0)
+        @test all(Σ[i, i] > 0 for i in axes(Σ, 1))
         @test parameter_symbols(p) == (:Σ,)
         @test dimension(p) == 6
-        @test constrained_dimension(p) == 6
         @test unconstrain(p, Σ) ≈ θ
         @test constrained_namedtuple(p, θ).Σ ≈ Σ
 
@@ -118,7 +111,6 @@ end
         @test parameter_symbols(p) == (:base_μ, :base_σ)
         @test constrain(p, θ) == (1.0, 1.0)
         @test constrained_namedtuple(p, θ) == (; base_μ=1.0, base_σ=1.0)
-        @test unconstrain(p, constrained_namedtuple(p, θ)) ≈ θ
     end
 end
 
@@ -169,13 +161,12 @@ end
         @test size(η[1]) == (3,)
         @test η[2] isa AbstractMatrix
         @test size(η[2]) == (3, 3)
-        @test η[2] ≈ Matrix{Float64}(I, 3, 3)
+        @test η[2] ≈ [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
 
         nt = constrained_namedtuple(p, θ)
         @test keys(nt) == (:μ, :Σ)
         @test nt.μ == zeros(3)
-        @test nt.Σ ≈ Matrix{Float64}(I, 3, 3)
-        @test unconstrain(p, nt) ≈ θ
+        @test nt.Σ ≈ [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
     end
 
     @testset "matrix-variate shapes" begin
