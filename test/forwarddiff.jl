@@ -42,6 +42,28 @@ using ForwardDiff
         @test all(isfinite, g)
     end
 
+    @testset "correlation matrix" begin
+        p = Correlation(:R, 4)
+        θ = [0.2, -0.3, 0.4, 0.1, -0.2, 0.35]
+        R = constrain(p, θ)
+
+        @test parameter_symbols(p) == (:R,)
+        @test dimension(p) == 6
+        @test size(R) == (4, 4)
+        @test R ≈ R'
+        @test all(isapprox(R[i, i], 1.0) for i in axes(R, 1))
+        @test unconstrain(p, R) ≈ θ
+        @test constrained_namedtuple(p, θ).R ≈ R
+
+        g = ForwardDiff.gradient(x -> sum(abs2, constrain(p, x)), θ)
+        @test length(g) == dimension(p)
+        @test all(isfinite, g)
+
+        @test_throws DomainError unconstrain(Correlation(:R, 2), [2.0 0.0; 0.0 1.0])
+        @test_throws DomainError unconstrain(Correlation(:R, 2), [1.0 0.2; 0.1 1.0])
+        @test_throws DomainError unconstrain(Correlation(:R, 2), [1.0 1.2; 1.2 1.0])
+    end
+
     @testset "coupled bilinear space" begin
         p = BilinearQuad(:x, :y, (0.0, 0.0), (1.5, -0.5), (0.0, 0.5), (1.0, 0.0))
         f(x) = sum(constrain(p, x))
