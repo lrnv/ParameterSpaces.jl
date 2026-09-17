@@ -81,6 +81,29 @@ Tuples of parameter spaces form Cartesian product spaces. For example,
 param_space
 ```
 
+### Distributions.jl types
+
+When the parameter space is completely determined by a `Distributions.jl`
+distribution type, the extension supports both the type and an instance:
+
+```@example distribution-types
+using Distributions
+
+parameter_symbols(param_space(Normal))
+```
+
+```@example distribution-types
+parameter_symbols(param_space(typeof(Gamma(2.0, 3.0))))
+```
+
+The same type-level API is available for distributions whose omitted constructor
+arguments are purely structural, for example `Binomial` and `Erlang`.
+
+An instance is still required when the space depends on stored values or runtime
+shape information. Examples include `Dirichlet`, `Categorical`, `Multinomial`,
+`PoissonBinomial`, multivariate and matrix-variate distributions, mixtures, and
+wrappers whose space depends on their contained distribution.
+
 ## Transformation interface
 
 Once a space `p` is available, the main public operations are:

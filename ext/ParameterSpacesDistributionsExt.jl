@@ -93,109 +93,114 @@ end
 # Distributions.jl integration
 # ---------------------------------------------------------------------------
 
+# These mappings depend only on the distribution type. Instance-level calls are
+# delegated to them by the generic Distribution fallback near the end of the
+# extension. Mappings whose space depends on dimensions, values, or nested
+# distributions remain defined on instances below.
+
 # Ordered endpoints
-param_space(::Uniform)                  = Ordered(:a, :b)
-param_space(::Arcsine)                  = Ordered(:a, :b)
-param_space(::LogUniform)               = PosOrdered(:a, :b)
-param_space(::TriangularDist)           = Between(:a, :b, :c)
+param_space(::Type{<:Uniform})                  = Ordered(:a, :b)
+param_space(::Type{<:Arcsine})                  = Ordered(:a, :b)
+param_space(::Type{<:LogUniform})               = PosOrdered(:a, :b)
+param_space(::Type{<:TriangularDist})           = Between(:a, :b, :c)
 
 # Location / scale families
-param_space(::Normal)                   = (Id(:μ), NonNeg(:σ))
-param_space(::LogNormal)                = (Id(:μ), NonNeg(:σ))
-param_space(::LogitNormal)              = (Id(:μ), NonNeg(:σ))
-param_space(::Cauchy)                   = (Id(:μ), Pos(:σ))
-param_space(::Laplace)                  = (Id(:μ), Pos(:θ))
-param_space(::Logistic)                 = (Id(:μ), Pos(:θ))
-param_space(::Gumbel)                   = (Id(:μ), Pos(:θ))
-param_space(::Levy)                     = (Id(:μ), Pos(:σ))
-param_space(::Biweight)                 = (Id(:μ), Pos(:σ))
-param_space(::Cosine)                   = (Id(:μ), Pos(:σ))
-param_space(::Epanechnikov)             = (Id(:μ), Pos(:σ))
-param_space(::SymTriangularDist)        = (Id(:μ), Pos(:σ))
-param_space(::Triweight)                = (Id(:μ), Pos(:σ))
+param_space(::Type{<:Normal})                   = (Id(:μ), NonNeg(:σ))
+param_space(::Type{<:LogNormal})                = (Id(:μ), NonNeg(:σ))
+param_space(::Type{<:LogitNormal})              = (Id(:μ), NonNeg(:σ))
+param_space(::Type{<:Cauchy})                   = (Id(:μ), Pos(:σ))
+param_space(::Type{<:Laplace})                  = (Id(:μ), Pos(:θ))
+param_space(::Type{<:Logistic})                 = (Id(:μ), Pos(:θ))
+param_space(::Type{<:Gumbel})                   = (Id(:μ), Pos(:θ))
+param_space(::Type{<:Levy})                     = (Id(:μ), Pos(:σ))
+param_space(::Type{<:Biweight})                 = (Id(:μ), Pos(:σ))
+param_space(::Type{<:Cosine})                   = (Id(:μ), Pos(:σ))
+param_space(::Type{<:Epanechnikov})             = (Id(:μ), Pos(:σ))
+param_space(::Type{<:SymTriangularDist})        = (Id(:μ), Pos(:σ))
+param_space(::Type{<:Triweight})                = (Id(:μ), Pos(:σ))
 
 # Positive scalar parameters
-param_space(::Exponential)              = Pos(:θ)
-param_space(::Rayleigh)                 = Pos(:σ)
-param_space(::Chi)                      = Pos(:ν)
-param_space(::Chisq)                    = Pos(:ν)
-param_space(::TDist)                    = Pos(:ν)
-param_space(::Lindley)                  = Pos(:θ)
-param_space(::Semicircle)               = Pos(:r)
+param_space(::Type{<:Exponential})              = Pos(:θ)
+param_space(::Type{<:Rayleigh})                 = Pos(:σ)
+param_space(::Type{<:Chi})                      = Pos(:ν)
+param_space(::Type{<:Chisq})                    = Pos(:ν)
+param_space(::Type{<:TDist})                    = Pos(:ν)
+param_space(::Type{<:Lindley})                  = Pos(:θ)
+param_space(::Type{<:Semicircle})               = Pos(:r)
 
 # Positive pairs / triples
-param_space(::Gamma)                    = (Pos(:α), Pos(:θ))
-param_space(::Beta)                     = (Pos(:α), Pos(:β))
-param_space(::BetaPrime)                = (Pos(:α), Pos(:β))
-param_space(::Frechet)                  = (Pos(:α), Pos(:θ))
-param_space(::InverseGamma)             = (Pos(:α), Pos(:θ))
-param_space(::InverseGaussian)          = (Pos(:μ), Pos(:λ))
-param_space(::Kumaraswamy)              = (Pos(:a), Pos(:b))
-param_space(::LogLogistic)              = (Pos(:α), Pos(:β))
-param_space(::Pareto)                   = (Pos(:α), Pos(:θ))
-param_space(::Weibull)                  = (Pos(:α), Pos(:θ))
-param_space(::FDist)                    = (Pos(:ν1), Pos(:ν2))
-param_space(::PGeneralizedGaussian)     = (Id(:μ), Pos(:α), Pos(:p))
+param_space(::Type{<:Gamma})                    = (Pos(:α), Pos(:θ))
+param_space(::Type{<:Beta})                     = (Pos(:α), Pos(:β))
+param_space(::Type{<:BetaPrime})                = (Pos(:α), Pos(:β))
+param_space(::Type{<:Frechet})                  = (Pos(:α), Pos(:θ))
+param_space(::Type{<:InverseGamma})             = (Pos(:α), Pos(:θ))
+param_space(::Type{<:InverseGaussian})          = (Pos(:μ), Pos(:λ))
+param_space(::Type{<:Kumaraswamy})              = (Pos(:a), Pos(:b))
+param_space(::Type{<:LogLogistic})              = (Pos(:α), Pos(:β))
+param_space(::Type{<:Pareto})                   = (Pos(:α), Pos(:θ))
+param_space(::Type{<:Weibull})                  = (Pos(:α), Pos(:θ))
+param_space(::Type{<:FDist})                    = (Pos(:ν1), Pos(:ν2))
+param_space(::Type{<:PGeneralizedGaussian})     = (Id(:μ), Pos(:α), Pos(:p))
 
 # Unconstrained shape / location parameters combined with positive scales
-param_space(::GeneralizedExtremeValue)  = (Id(:μ), Pos(:σ), Id(:ξ))
-param_space(::GeneralizedPareto)        = (Id(:μ), Pos(:σ), Id(:ξ))
-param_space(::SkewNormal)               = (Id(:ξ), Pos(:ω), Id(:α))
-param_space(::SkewedExponentialPower)   = (Id(:μ), Pos(:σ), Pos(:p), ProbOpen(:α))
-param_space(::JohnsonSU)                = (Id(:ξ), Pos(:λ), Id(:γ), Pos(:δ))
-param_space(::NormalInverseGaussian)    = NIG(:μ, :α, :β, :δ)
-param_space(::StudentizedRange)         = (Pos(:ν), Lower(:k, 1.0))
+param_space(::Type{<:GeneralizedExtremeValue})  = (Id(:μ), Pos(:σ), Id(:ξ))
+param_space(::Type{<:GeneralizedPareto})        = (Id(:μ), Pos(:σ), Id(:ξ))
+param_space(::Type{<:SkewNormal})               = (Id(:ξ), Pos(:ω), Id(:α))
+param_space(::Type{<:SkewedExponentialPower})   = (Id(:μ), Pos(:σ), Pos(:p), ProbOpen(:α))
+param_space(::Type{<:JohnsonSU})                = (Id(:ξ), Pos(:λ), Id(:γ), Pos(:δ))
+param_space(::Type{<:NormalInverseGaussian})    = NIG(:μ, :α, :β, :δ)
+param_space(::Type{<:StudentizedRange})         = (Pos(:ν), Lower(:k, 1.0))
 
 # Noncentral families
-param_space(::NoncentralBeta)           = (Pos(:α), Pos(:β), NonNeg(:λ))
-param_space(::NoncentralChisq)          = (Pos(:ν), NonNeg(:λ))
-param_space(::NoncentralF)              = (Pos(:ν1), Pos(:ν2), NonNeg(:λ))
-param_space(::NoncentralT)              = (Pos(:ν), Id(:λ))
+param_space(::Type{<:NoncentralBeta})           = (Pos(:α), Pos(:β), NonNeg(:λ))
+param_space(::Type{<:NoncentralChisq})          = (Pos(:ν), NonNeg(:λ))
+param_space(::Type{<:NoncentralF})              = (Pos(:ν1), Pos(:ν2), NonNeg(:λ))
+param_space(::Type{<:NoncentralT})              = (Pos(:ν), Id(:λ))
 
 # Alternative normal parameterization
-param_space(::NormalCanon)              = (Id(:η), Pos(:λ))
+param_space(::Type{<:NormalCanon})              = (Id(:η), Pos(:λ))
 
 # Circular / radial families
-param_space(::Rician)                   = (NonNeg(:ν), Pos(:σ))
-param_space(::VonMises)                 = (Id(:μ), NonNeg(:κ))
+param_space(::Type{<:Rician})                   = (NonNeg(:ν), Pos(:σ))
+param_space(::Type{<:VonMises})                 = (Id(:μ), NonNeg(:κ))
 
 # Discrete distributions with continuous parameters
-param_space(::Bernoulli)                = Prob(:p)
-param_space(::BernoulliLogit)           = Id(:logitp)
-param_space(::Binomial)                 = Prob(:p)
-param_space(::Geometric)                = ProbOpenLeft(:p)
-param_space(::NegativeBinomial)         = (Pos(:r), ProbOpenLeft(:p))
-param_space(::Poisson)                  = NonNeg(:λ)
-param_space(::Skellam)                  = (NonNeg(:μ1), NonNeg(:μ2))
-param_space(d::PoissonBinomial)         = ProbVec(:p, length(params(d)[1]))
-param_space(::Soliton)                  = (ProbOpen(:δ), ProbOpenRight(:atol))
+param_space(::Type{<:Bernoulli})                = Prob(:p)
+param_space(::Type{<:BernoulliLogit})           = Id(:logitp)
+param_space(::Type{<:Binomial})                 = Prob(:p)
+param_space(::Type{<:Geometric})                = ProbOpenLeft(:p)
+param_space(::Type{<:NegativeBinomial})         = (Pos(:r), ProbOpenLeft(:p))
+param_space(::Type{<:Poisson})                  = NonNeg(:λ)
+param_space(::Type{<:Skellam})                  = (NonNeg(:μ1), NonNeg(:μ2))
+param_space(d::PoissonBinomial)                 = ProbVec(:p, length(params(d)[1]))
+param_space(::Type{<:Soliton})                  = (ProbOpen(:δ), ProbOpenRight(:atol))
 
 # Distributions with structural discrete parameters
-param_space(::BetaBinomial)             = (Pos(:α), Pos(:β))
-param_space(::Erlang)                   = Pos(:θ)
-param_space(::Chernoff)                 = ()
-param_space(::DiscreteUniform)          = ()
-param_space(::Hypergeometric)           = ()
-param_space(::Kolmogorov)               = ()
-param_space(::KSDist)                   = ()
-param_space(::KSOneSided)               = ()
+param_space(::Type{<:BetaBinomial})             = (Pos(:α), Pos(:β))
+param_space(::Type{<:Erlang})                   = Pos(:θ)
+param_space(::Type{<:Chernoff})                 = ()
+param_space(::Type{<:DiscreteUniform})          = ()
+param_space(::Type{<:Hypergeometric})           = ()
+param_space(::Type{<:Kolmogorov})               = ()
+param_space(::Type{<:KSDist})                   = ()
+param_space(::Type{<:KSOneSided})               = ()
 
 # Degenerate / vector-parameter distributions
-param_space(::Dirac)                    = Id(:x)
-param_space(d::DiscreteNonParametric)   = Simplex(:p, probs(d))
-param_space(d::Dirichlet)               = PosVec(:α, length(d))
+param_space(::Type{<:Dirac})                    = Id(:x)
+param_space(d::DiscreteNonParametric)           = Simplex(:p, probs(d))
+param_space(d::Dirichlet)                       = PosVec(:α, length(d))
 
 # Simplex-valued probability parameters. The trial count of Multinomial
 # remains structural and is therefore not part of the optimization space.
-param_space(d::Categorical)             = Simplex(:p, probs(d))
-param_space(d::Multinomial)             = Simplex(:p, probs(d))
+param_space(d::Categorical)                     = Simplex(:p, probs(d))
+param_space(d::Multinomial)                     = Simplex(:p, probs(d))
 
 # Noncentral hypergeometric families: population/sample sizes are structural.
 if isdefined(Distributions, :FisherNoncentralHypergeometric)
-    @eval param_space(::Distributions.FisherNoncentralHypergeometric) = Pos(:ω)
+    @eval param_space(::Type{<:Distributions.FisherNoncentralHypergeometric}) = Pos(:ω)
 end
 if isdefined(Distributions, :WalleniusNoncentralHypergeometric)
-    @eval param_space(::Distributions.WalleniusNoncentralHypergeometric) = Pos(:ω)
+    @eval param_space(::Type{<:Distributions.WalleniusNoncentralHypergeometric}) = Pos(:ω)
 end
 
 # Affine wrapper. The sign of the nonzero scale determines the connected chart.
@@ -279,8 +284,8 @@ function param_space(d::MatrixFDist)
     )
 end
 
-param_space(::LKJ) = Pos(:η)
-param_space(::LKJCholesky) = Pos(:η)
+param_space(::Type{<:LKJ}) = Pos(:η)
+param_space(::Type{<:LKJCholesky}) = Pos(:η)
 
 # Generic wrappers. Truncation/censoring bounds, reshape dimensions, and
 # order-statistic ranks/sample sizes are treated as structural.
@@ -317,8 +322,11 @@ if isdefined(Distributions, :Product)
     @eval param_space(d::Distributions.Product) = _product_param_space(d)
 end
 
-param_space(d::Distribution) =
-    throw(ArgumentError("parameter space not implemented for $(typeof(d))"))
+function param_space(d::Distribution)
+    T = typeof(d)
+    applicable(param_space, T) && return param_space(T)
+    throw(ArgumentError("parameter space not implemented for $T"))
+end
 
 
 end
