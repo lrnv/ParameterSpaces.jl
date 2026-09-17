@@ -2,6 +2,25 @@ module ParameterSpaces
 
 export AbstractParameterSpace,
        param_space,
+       Id,
+       Pos,
+       NonNeg,
+       Neg,
+       Prob,
+       ProbOpen,
+       ProbOpenLeft,
+       ProbOpenRight,
+       Lower,
+       Ordered,
+       PosOrdered,
+       Between,
+       Simplex,
+       SPD,
+       Prefixed,
+       PosVec,
+       ProbVec,
+       RealVec,
+       RealMat,
        dimension,
        constrained_dimension,
        unconstrained_example,
@@ -22,6 +41,15 @@ export AbstractParameterSpace,
 # Core parameter-space types
 # ---------------------------------------------------------------------------
 
+"""
+    param_space(object)
+
+Return the parameter-space description associated with `object`.
+
+`param_space` is an open generic function: `ParameterSpaces.jl` provides the
+space constructors and transformation machinery, while users and package
+extensions define methods for their own object types.
+"""
 function param_space end
 
 abstract type AbstractParameterSpace end
@@ -80,7 +108,7 @@ end
 
 
 # ---------------------------------------------------------------------------
-# Compact constructors used by the distribution mappings
+# Public parameter-space constructors
 # ---------------------------------------------------------------------------
 
 _scalar(s::Symbol, d::D) where {D<:AbstractScalarDomain} =
@@ -92,42 +120,151 @@ _elementwise(s::Symbol, d::D, dims::NTuple{N,Int}) where {D<:AbstractScalarDomai
 _ordered(a::Symbol, b::Symbol, d::D) where {D<:AbstractScalarDomain} =
     OrderedSpace{a,b,D}(d)
 
-Id(s::Symbol)            = _scalar(s, IdentityDomain())
-Pos(s::Symbol)           = _scalar(s, ExpDomain{false}())
-NonNeg(s::Symbol)        = _scalar(s, ExpDomain{true}())
-Neg(s::Symbol)           = _scalar(s, NegativeExpDomain())
-Prob(s::Symbol)          = _scalar(s, ProbabilityDomain{true,true}())
-ProbOpen(s::Symbol)      = _scalar(s, ProbabilityDomain{false,false}())
-ProbOpenLeft(s::Symbol)  = _scalar(s, ProbabilityDomain{false,true}())
-ProbOpenRight(s::Symbol) = _scalar(s, ProbabilityDomain{true,false}())
-Lower(s::Symbol, lower)  = _scalar(s, LowerDomain(lower))
+"""
+    Id(name::Symbol)
 
-Ordered(a::Symbol, b::Symbol)    = _ordered(a, b, IdentityDomain())
+A scalar parameter named `name` with values in `ℝ`.
+"""
+Id(s::Symbol) = _scalar(s, IdentityDomain())
+
+"""
+    Pos(name::Symbol)
+
+A strictly positive scalar parameter named `name`.
+"""
+Pos(s::Symbol) = _scalar(s, ExpDomain{false}())
+
+"""
+    NonNeg(name::Symbol)
+
+A nonnegative scalar parameter named `name`. Finite unconstrained coordinates
+map to positive values; the boundary value zero maps back to `-Inf`.
+"""
+NonNeg(s::Symbol) = _scalar(s, ExpDomain{true}())
+
+"""
+    Neg(name::Symbol)
+
+A strictly negative scalar parameter named `name`.
+"""
+Neg(s::Symbol) = _scalar(s, NegativeExpDomain())
+
+"""
+    Prob(name::Symbol)
+
+A scalar probability parameter named `name` in `[0, 1]`. Finite unconstrained
+coordinates map to `(0, 1)`; the endpoints map back to infinite coordinates.
+"""
+Prob(s::Symbol) = _scalar(s, ProbabilityDomain{true,true}())
+
+"""
+    ProbOpen(name::Symbol)
+
+A scalar probability parameter named `name` in `(0, 1)`.
+"""
+ProbOpen(s::Symbol) = _scalar(s, ProbabilityDomain{false,false}())
+
+"""
+    ProbOpenLeft(name::Symbol)
+
+A scalar probability parameter named `name` in `(0, 1]`.
+"""
+ProbOpenLeft(s::Symbol) = _scalar(s, ProbabilityDomain{false,true}())
+
+"""
+    ProbOpenRight(name::Symbol)
+
+A scalar probability parameter named `name` in `[0, 1)`.
+"""
+ProbOpenRight(s::Symbol) = _scalar(s, ProbabilityDomain{true,false}())
+
+"""
+    Lower(name::Symbol, lower)
+
+A scalar parameter named `name` constrained to be strictly greater than
+`lower`.
+"""
+Lower(s::Symbol, lower) = _scalar(s, LowerDomain(lower))
+
+"""
+    Ordered(first::Symbol, second::Symbol)
+
+Two real scalar parameters satisfying `first < second`.
+"""
+Ordered(a::Symbol, b::Symbol) = _ordered(a, b, IdentityDomain())
+
+"""
+    PosOrdered(first::Symbol, second::Symbol)
+
+Two scalar parameters satisfying `0 < first < second`.
+"""
 PosOrdered(a::Symbol, b::Symbol) = _ordered(a, b, ExpDomain{false}())
+
+"""
+    Between(lower::Symbol, upper::Symbol, value::Symbol)
+
+Three scalar parameters satisfying `lower ≤ value ≤ upper`. Finite
+unconstrained coordinates map to the interior `lower < value < upper`.
+"""
 Between(a::Symbol, b::Symbol, c::Symbol) = Between{a,b,c}()
+
+# Internal specialized space used by the Distributions.jl extension.
 NIG(μ::Symbol, α::Symbol, β::Symbol, δ::Symbol) = NIG{μ,α,β,δ}()
 
+"""
+    PosVec(name::Symbol, n::Integer)
+
+An `n`-component vector parameter with strictly positive entries.
+"""
 function PosVec(s::Symbol, n::Integer)
     n > 0 || throw(ArgumentError("dimension must be positive"))
     return _elementwise(s, ExpDomain{false}(), (Int(n),))
 end
 
+"""
+    ProbVec(name::Symbol, n::Integer)
+
+An `n`-component vector whose entries are independently constrained to
+`[0, 1]`. Use [`Simplex`](@ref) when the entries must also sum to one.
+"""
 function ProbVec(s::Symbol, n::Integer)
     n > 0 || throw(ArgumentError("dimension must be positive"))
     return _elementwise(s, ProbabilityDomain{true,true}(), (Int(n),))
 end
 
+"""
+    RealVec(name::Symbol, n::Integer)
+
+An unconstrained real vector parameter with `n` entries.
+"""
 function RealVec(s::Symbol, n::Integer)
     n >= 0 || throw(ArgumentError("dimension must be nonnegative"))
     return _elementwise(s, IdentityDomain(), (Int(n),))
 end
 
+"""
+    RealMat(name::Symbol, m::Integer, n::Integer)
+
+An unconstrained real `m × n` matrix parameter, represented as a flattened
+vector in column-major order.
+"""
 function RealMat(s::Symbol, m::Integer, n::Integer)
     m >= 0 || throw(ArgumentError("number of rows must be nonnegative"))
     n >= 0 || throw(ArgumentError("number of columns must be nonnegative"))
     return _elementwise(s, IdentityDomain(), (Int(m), Int(n)))
 end
 
+"""
+    Simplex(name::Symbol, n::Integer; anchor=n)
+    Simplex(name::Symbol, probabilities::AbstractVector)
+
+An `n`-component probability vector constrained to the simplex. The space has
+`n - 1` unconstrained coordinates. `anchor` selects the component used as the
+reference coordinate for the chart.
+
+When a probability vector is supplied, its largest component is selected as
+the anchor.
+"""
 Simplex(s::Symbol, n::Integer; anchor::Integer=n) = Simplex{s}(n, anchor)
 
 function Simplex(s::Symbol, p::AbstractVector)
@@ -146,7 +283,21 @@ function Simplex(s::Symbol, p::AbstractVector)
     return Simplex(s, length(p); anchor=anchor)
 end
 
+"""
+    SPD(name::Symbol, n::Integer)
+
+An `n × n` symmetric positive-definite matrix parameter. The constrained
+representation contains the flattened lower triangle; the unconstrained chart
+uses a Cholesky factor with log-transformed diagonal entries.
+"""
 SPD(s::Symbol, n::Integer) = SPD{s}(n)
+
+"""
+    Prefixed(prefix::Symbol, space)
+
+Wrap a parameter space and prefix all names returned by [`parameter_symbols`](@ref)
+with `prefix`. The transformation itself is unchanged.
+"""
 Prefixed(prefix::Symbol, space) = Prefixed{prefix,typeof(space)}(space)
 
 const ProductParameterSpace = Tuple{Vararg{AbstractParameterSpace}}

@@ -11,32 +11,39 @@
 
 ---
 
-`ParameterSpaces.jl` provides transformations between unconstrained optimization
-coordinates `θ ∈ ℝⁿ` and constrained continuous parameters `η`, together with
-analytic Jacobians.
+`ParameterSpaces.jl` describes constrained parameter spaces and provides
+transformations between unconstrained optimization coordinates `θ ∈ ℝⁿ` and
+valid constrained parameters `η`, together with analytic Jacobians.
 
-The package is split into two layers:
+The package has two layers:
 
-- the **core package**, which contains parameter-space representations, associated
-  transformation and Jacobians, with no dependencies.
-- a **`Distributions.jl` package extension** as a proof of concept, which adds `param_space` methods
-  for supported distribution types when `Distributions.jl` is loaded.
+- the **core package** provides public constructors for parameter spaces and the
+  transformation/Jacobian machinery, with no dependencies;
+- optional **package extensions** can define `param_space` mappings for external
+  object types. The bundled `Distributions.jl` extension is one such mapping.
 
-The main convention is
+A parameter space can therefore be constructed directly:
+
+```julia
+using ParameterSpaces
+
+p = (Id(:μ), Pos(:σ))
+
+θ = [1.5, log(2.0)]
+η = constrain(p, θ)
+# [1.5, 2.0]
+
+unconstrain(p, η)
+# ≈ θ
+```
+
+or associated with an object through the open `param_space` interface:
 
 ```julia
 p = param_space(object)
-η = constrain(p, θ)
-θ = unconstrain(p, η)
 ```
 
-`param_space` is an open generic function. The core package provides the
-parameter-space machinery, while concrete object-to-space mappings can be added
-by package extensions or by the user. The extension shipped here covers almmost all `Distributions.jl` objects.
-
 ## Installation
-
-Install and the core package with
 
 ```julia
 using Pkg
@@ -44,117 +51,202 @@ Pkg.add(url="https://github.com/lrnv/ParameterSpaces.jl")
 using ParameterSpaces
 ```
 
-## Quick start with Distributions.jl
+`Distributions.jl` is optional. Install and load it only when you want the
+bundled distribution mappings:
 
 ```julia
-using ParameterSpaces, Distributions
+Pkg.add("Distributions")
+using Distributions
+```
 
-d = Gamma(2.0, 3.0)
-p = param_space(d)
+Loading both packages automatically activates the package extension.
+
+## Defining a parameter space for your own type
+
+`param_space` is deliberately an open generic function. To integrate your own
+object, define a method returning one parameter space or a tuple of parameter
+spaces.
+
+```julia
+using ParameterSpaces
+import ParameterSpaces: param_space
+
+struct MyModel
+    μ::Float64
+    σ::Float64
+    weights::Vector{Float64}
+end
+
+param_space(m::MyModel) = (
+    Id(:μ),
+    Pos(:σ),
+    Simplex(:weights, m.weights),
+)
+
+model = MyModel(0.0, 1.0, [0.2, 0.3, 0.5])
+p = param_space(model)
 
 dimension(p)
-# 2
+# 4
+
+constrained_dimension(p)
+# 5
 
 parameter_symbols(p)
-# (:α, :θ)
-
-θ = [log(2.0), log(3.0)]
-
-η = constrain(p, θ)
-# ≈ [2.0, 3.0]
-
-unconstrain(p, η)
-# ≈ θ
+# (:μ, :σ, :weights_1, :weights_2, :weights_3)
 ```
 
-The parameter-space object returned by `param_space` can generally be treated
-as opaque. The exported interface is intended to be sufficient for downstream
-optimization code.
+The object-to-space mapping is separate from the transformation engine. The
+core package does not need to know anything about `MyModel` itself.
 
-## Public interface
+## Public space constructors
 
-### `param_space`
+The constructors below are the public vocabulary for describing parameter
+constraints. Their concrete implementation types are intentionally kept
+internal so downstream code can depend on the semantic constructors rather
+than on representation details.
+
+| Constructor | Constrained parameter space |
+| --- | --- |
+| `Id(:x)` | `x ∈ ℝ` |
+| `Pos(:x)` | `x > 0` |
+| `NonNeg(:x)` | `x ≥ 0` |
+| `Neg(:x)` | `x < 0` |
+| `Prob(:p)` | `p ∈ [0, 1]` |
+| `ProbOpen(:p)` | `p ∈ (0, 1)` |
+| `ProbOpenLeft(:p)` | `p ∈ (0, 1]` |
+| `ProbOpenRight(:p)` | `p ∈ [0, 1)` |
+| `Lower(:x, a)` | `x > a` |
+| `Ordered(:a, :b)` | `a < b` |
+| `PosOrdered(:a, :b)` | `0 < a < b` |
+| `Between(:a, :b, :c)` | `a ≤ c ≤ b` |
+| `RealVec(:x, n)` | real vector of length `n` |
+| `PosVec(:x, n)` | positive vector of length `n` |
+| `ProbVec(:p, n)` | vector with entries in `[0, 1]` |
+| `RealMat(:A, m, n)` | real `m × n` matrix |
+| `Simplex(:p, n)` | `n` probabilities summing to one |
+| `SPD(:Σ, n)` | symmetric positive-definite `n × n` matrix |
+| `Prefixed(:base, p)` | space `p` with prefixed parameter names |
+
+Finite unconstrained coordinates always map to the interior of the constrained
+domain. Some inverse transforms accept boundary values and represent them with
+infinite unconstrained coordinates. For example:
 
 ```julia
-p = param_space(object)
+p = Prob(:p)
+
+unconstrain(p, [0.0])
+# [-Inf]
+
+unconstrain(p, [1.0])
+# [Inf]
 ```
 
-Return the parameter space associated with an object when a mapping is
-available.
+### Product spaces
 
-`ParameterSpaces.jl` itself defines the generic function. Concrete mappings are
-provided by extensions. In particular, loading `Distributions.jl` activates the
-bundled distribution extension.
-
-For distribution instances, the concrete instance can matter because the
-parameter-space dimension or structure may depend on values stored in the
-distribution, for example for `Dirichlet`, `Categorical`, `Multinomial`,
-multivariate distributions, and mixture models.
-
-The bundled extension deliberately does not guess a mapping for unsupported
-distribution types: `param_space(d)` throws an `ArgumentError` when no specific
-mapping is implemented.
-
-### Dimensions
+A tuple of spaces represents their Cartesian product, so heterogeneous models
+can be built compositionally:
 
 ```julia
+p = (
+    Id(:location),
+    Pos(:scale),
+    Prob(:mixing_probability),
+)
+
+parameter_symbols(p)
+# (:location, :scale, :mixing_probability)
+
 dimension(p)
-constrained_dimension(p)
+# 3
 ```
 
-`dimension(p)` is the number of unconstrained optimization coordinates.
+### Vector and matrix spaces
 
-`constrained_dimension(p)` is the length of the constrained continuous
-parameter vector returned by `constrain`.
-
-For most parameter spaces the two are equal. They differ for constrained
-manifolds such as a simplex.
-
-For example:
+Vector and matrix parameters are represented by flat constrained vectors.
+`parameter_symbols` records the ordering:
 
 ```julia
-p = param_space(Categorical([0.2, 0.3, 0.5]))
+parameter_symbols(RealVec(:x, 3))
+# (:x_1, :x_2, :x_3)
+
+parameter_symbols(RealMat(:A, 2, 2))
+# (:A_1_1, :A_2_1, :A_1_2, :A_2_2)
+```
+
+`ProbVec` constrains each component independently. If the components must sum to
+one, use `Simplex` instead.
+
+### Simplex spaces
+
+A simplex with `K` constrained probabilities has only `K - 1` unconstrained
+degrees of freedom:
+
+```julia
+p = Simplex(:p, 3)
 
 dimension(p)
 # 2
 
 constrained_dimension(p)
 # 3
+
+θ = unconstrained_example(p)
+η, J = constrain_with_jac(p, θ)
+
+sum(η)
+# ≈ 1
+
+size(J)
+# (3, 2)
 ```
 
-A categorical distribution with `K` probabilities has only `K - 1`
-independent degrees of freedom.
-
-### Parameter names
+The optional `anchor` keyword chooses the reference component for the chart:
 
 ```julia
-parameter_symbols(p)
+p = Simplex(:p, 4; anchor=2)
 ```
 
-Return names for the constrained continuous parameters.
+Passing an existing probability vector chooses its largest component as the
+anchor, which is useful when the chart is selected from an existing object:
 
 ```julia
-p = param_space(Normal(0.0, 1.0))
-
-parameter_symbols(p)
-# (:μ, :σ)
+p = Simplex(:p, [0.1, 0.6, 0.3])
 ```
 
-Vector and matrix parameters are flattened and receive indexed names.
+### Positive-definite matrices
 
-### Transformations
+`SPD(:Σ, n)` represents a symmetric positive-definite matrix through
+unconstrained Cholesky coordinates. The constrained representation is the
+flattened lower triangle:
+
+```julia
+p = SPD(:Σ, 3)
+
+dimension(p)
+# 6
+
+parameter_symbols(p)
+# (:Σ_1_1, :Σ_2_1, :Σ_2_2, :Σ_3_1, :Σ_3_2, :Σ_3_3)
+```
+
+## Transformation interface
+
+For any parameter space `p`:
 
 ```julia
 η = constrain(p, θ)
 θ = unconstrain(p, η)
 ```
 
-`constrain` maps unconstrained optimization coordinates to valid constrained
-parameters.
+`dimension(p)` is the number of unconstrained optimization coordinates, while
+`constrained_dimension(p)` is the length of the constrained representation.
+They are equal for ordinary square transformations and differ for spaces such
+as a simplex.
 
-`unconstrain` applies the inverse chart.
+`parameter_symbols(p)` returns names for the constrained representation.
 
-Round trips hold whenever the point is in the interior of the relevant chart:
+Round trips hold whenever the point belongs to the relevant chart:
 
 ```julia
 θ ≈ unconstrain(p, constrain(p, θ))
@@ -174,15 +266,14 @@ with
 J = \frac{\partial \eta}{\partial \theta}.
 ```
 
-To avoid evaluating a transformation twice, use
+To avoid evaluating a transformation twice, use:
 
 ```julia
 η, J = constrain_with_jac(p, θ)
 θ, Jinv = unconstrain_with_jac(p, η)
 ```
 
-For maximum-likelihood optimization, if `gη` is the gradient with respect to
-the constrained parameters,
+For example, if `gη` is a gradient with respect to the constrained parameters,
 
 ```julia
 η, J = constrain_with_jac(p, θ)
@@ -198,165 +289,74 @@ logabsdet_constrain_jac(p, θ)
 logabsdet_unconstrain_jac(p, η)
 ```
 
-These are useful for change-of-variables calculations.
+These are useful for change-of-variables calculations. For spaces with
+rectangular Jacobians, such as `Simplex`, `logabsdet_*` is intentionally
+undefined and throws an `ArgumentError`.
 
-They are not required merely to optimize a likelihood after reparameterizing
-its parameters.
-
-For parameter spaces with rectangular Jacobians, such as a simplex,
-`logabsdet_*` is intentionally undefined and throws an `ArgumentError`.
-
-### Examples
+### Example points and named output
 
 ```julia
 θ = unconstrained_example(p)
 η = constrained_example(p)
 ```
 
-Return simple valid example points.
+return simple valid example points.
 
-### Named constrained parameters
-
-```julia
-constrained_namedtuple(p, θ)
-```
-
-Example:
+`constrained_namedtuple` combines a transformation with the constrained
+parameter names:
 
 ```julia
-p = param_space(Gamma(2.0, 3.0))
+p = (Id(:μ), Pos(:σ))
 
-constrained_namedtuple(p, [log(2.0), log(3.0)])
-# (α = 2.0, θ = 3.0)
+constrained_namedtuple(p, [1.0, log(2.0)])
+# (μ = 1.0, σ = 2.0)
 ```
 
 ## Distributions.jl extension
 
-The `Distributions.jl` integration lives in
-`ext/ParameterSpacesDistributionsExt.jl` and is declared through Julia's package
-extension mechanism. `Distributions` is therefore a weak dependency rather than
-a core dependency.
-
-This keeps the transformation engine usable on its own while retaining the
-convenient distribution mappings when `Distributions.jl` is present.
-
-The extension currently covers a broad range of distribution families,
-including:
-
-- common continuous and discrete univariate distributions,
-- ordered and bounded parameterizations,
-- simplex-valued probability parameters,
-- multivariate normal families,
-- positive-definite matrix parameters,
-- matrix-variate distributions,
-- mixture models,
-- product distributions,
-- affine distributions,
-- truncated and censored distributions,
-- order-statistic and reshaped wrappers.
-
-Coverage can be queried directly by calling `param_space(d)`. Unsupported types
-fail explicitly instead of silently guessing a parameterization.
-
-## Simplex-valued parameters
-
-Probability vectors are represented using `K - 1` unconstrained coordinates
-for `K` constrained probabilities.
+The optional integration lives in `ext/ParameterSpacesDistributionsExt.jl`.
+`Distributions` is a weak dependency, so the core transformation engine remains
+independent of it.
 
 ```julia
-d = Categorical([0.2, 0.3, 0.5])
+using ParameterSpaces, Distributions
+
+d = Gamma(2.0, 3.0)
 p = param_space(d)
 
-θ = unconstrained_example(p)
-η, J = constrain_with_jac(p, θ)
+parameter_symbols(p)
+# (:α, :θ)
 
-length(θ)
-# 2
-
-length(η)
-# 3
-
-size(J)
-# (3, 2)
-
-sum(η)
-# ≈ 1
+θ = [log(2.0), log(3.0)]
+constrain(p, θ)
+# ≈ [2.0, 3.0]
 ```
 
-The same principle is used for distributions such as `Multinomial` and for
-mixture weights.
+The extension covers a broad range of `Distributions.jl` families, including
+common univariate distributions, multivariate and matrix-variate families,
+mixtures, product distributions, simplex-valued parameters, positive-definite
+matrix parameters, and common wrappers.
 
-## Positive-definite matrix parameters
+For this extension, `param_space(d)` describes the **continuous parameters to
+optimize**, not necessarily every constructor argument. Discrete or structural
+parameters such as trial counts, reshape dimensions, truncation bounds, and
+order-statistic indices can therefore be omitted from the optimization space.
 
-Positive-definite matrix parameters are represented through unconstrained
-Cholesky coordinates.
+Unsupported distribution types fail explicitly instead of silently guessing a
+parameterization.
 
-For example, multivariate normal covariance or precision matrices are mapped
-to a Euclidean vector while preserving positive definiteness after
-`constrain`.
+## Design principle
 
-The constrained representation exposed by this package is flattened; use
-`parameter_symbols` to inspect its ordering.
-
-## Structural parameters
-
-For `Distributions.jl`, `param_space` describes the **continuous parameters to
-optimize**, not necessarily every constructor argument of a distribution.
-
-Discrete or structural parameters are intentionally omitted when appropriate.
-
-Examples include:
+The intended extension point is the semantic space-construction API:
 
 ```julia
-Binomial(n, p)       # n is structural, p is optimized
-Multinomial(n, p)    # n is structural, p is optimized
-Erlang(k, θ)         # k is structural, θ is optimized
+param_space(object) = (
+    Id(:location),
+    Pos(:scale),
+    Simplex(:weights, 3),
+)
 ```
 
-Likewise, truncation/censoring bounds, reshape dimensions, order-statistic
-indices, and similar metadata are treated as structural by the corresponding
-wrapper mappings.
-
-A distribution may therefore legitimately have
-
-```julia
-dimension(param_space(d)) == 0
-```
-
-when it contains no continuous parameter to optimize.
-
-## Boundary behavior
-
-Finite unconstrained coordinates map to the interior of constrained domains.
-
-Some inverse transformations also accept valid boundary values and map them to
-infinite unconstrained coordinates. For example:
-
-```julia
-p = param_space(Bernoulli(0.5))
-
-unconstrain(p, [0.0])
-# [-Inf]
-
-unconstrain(p, [1.0])
-# [Inf]
-```
-
-This makes the constrained domain faithfully represent distributions that allow
-boundary values while retaining an unconstrained Euclidean chart for finite
-optimization coordinates.
-
-## Design goals
-
-The package aims to keep the optimization-facing interface small:
-
-```julia
-p = param_space(object)
-
-η, J = constrain_with_jac(p, θ)
-θ = unconstrain(p, η)
-```
-
-The transformations and Jacobians are implemented analytically. The core
-package does not require `Distributions.jl`; distribution-specific mappings are
-loaded only through the optional package extension.
+Downstream code should construct spaces with the public constructors above and
+use the generic transformation interface. Internal concrete types and scalar
+domain implementations are not part of the public API.
