@@ -72,7 +72,13 @@ ProbVec
 RealMat
 Simplex
 SPD
+Correlation
 ```
+
+`SPD(:Σ, n)` describes an arbitrary symmetric positive-definite matrix, while
+`Correlation(:R, n)` additionally fixes the diagonal to one. The latter has
+`n(n-1)/2` unconstrained coordinates and returns a full `n × n` correlation
+matrix.
 
 ### Naming wrappers
 
@@ -114,6 +120,9 @@ p = param_space(X)
 (size(η[1]), size(η[2]), keys(constrained_namedtuple(p, θ)))
 ```
 
+For the canonical multivariate normal parameterization, the precision matrix
+`J` is positive definite but otherwise unconstrained, so it uses `SPD(:J, n)`.
+
 ## Transformation interface
 
 The public transformation interface is intentionally small:
@@ -124,8 +133,8 @@ The public transformation interface is intentionally small:
 ```
 
 `θ` is always a flat vector. `η` has the natural constrained representation:
-a scalar parameter is a scalar, a vector parameter is a vector, an SPD
-parameter is a full symmetric matrix, and a Cartesian product is a tuple of
+a scalar parameter is a scalar, a vector parameter is a vector, a structured
+matrix parameter is a full matrix, and a Cartesian product is a tuple of
 logical parameter values.
 
 Use `dimension` for the optimizer dimension, `constrained_dimension` for the
