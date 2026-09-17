@@ -17,10 +17,9 @@ analytic Jacobians.
 
 The package is split into two layers:
 
-- the **core package**, which contains parameter-space representations and the
-  transformation/Jacobian machinery, with no runtime dependency on
-  `Distributions.jl`;
-- a **`Distributions.jl` package extension**, which adds `param_space` methods
+- the **core package**, which contains parameter-space representations, associated
+  transformation and Jacobians, with no dependencies.
+- a **`Distributions.jl` package extension** as a proof of concept, which adds `param_space` methods
   for supported distribution types when `Distributions.jl` is loaded.
 
 The main convention is
@@ -33,36 +32,17 @@ p = param_space(object)
 
 `param_space` is an open generic function. The core package provides the
 parameter-space machinery, while concrete object-to-space mappings can be added
-by package extensions. The extension shipped here covers a broad set of
-`Distributions.jl` types.
+by package extensions or by the user. The extension shipped here covers almmost all `Distributions.jl` objects.
 
 ## Installation
 
-Install the core package with
+Install and the core package with
 
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/lrnv/ParameterSpaces.jl")
-```
-
-For the core functionality only:
-
-```julia
 using ParameterSpaces
 ```
-
-For the `Distributions.jl` integration, install `Distributions` separately if
-needed and load both packages:
-
-```julia
-using Pkg
-Pkg.add("Distributions")
-
-using ParameterSpaces, Distributions
-```
-
-The `ParameterSpacesDistributionsExt` extension is activated automatically as
-soon as both packages are loaded; their load order does not matter.
 
 ## Quick start with Distributions.jl
 
