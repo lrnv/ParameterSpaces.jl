@@ -128,9 +128,11 @@ change-of-variables calculations when the Jacobian is square.
 ### ForwardDiff integration
 
 When `ForwardDiff.jl` is loaded together with `ParameterSpaces.jl`, the optional
-ForwardDiff extension propagates dual-number partials through `constrain` and
-`unconstrain` using the analytical Jacobians already provided by the parameter
-space. No additional user API is required:
+ForwardDiff extension propagates dual-number partials through `constrain` using
+the analytical Jacobian already provided by the parameter space. This is the
+hot direction for unconstrained optimization: optimizer coordinates are mapped
+to valid constrained parameters before evaluating the objective. No additional
+user API is required:
 
 ```julia
 using ForwardDiff, ParameterSpaces
@@ -143,7 +145,10 @@ ForwardDiff.jacobian(x -> constrain(p, x), θ)
 ```
 
 The rule also composes with nested ForwardDiff differentiation, so higher-order
-derivatives of objectives that call `constrain` remain available.
+derivatives of objectives that call `constrain` remain available. `unconstrain`
+keeps its ordinary implementation; it is primarily used to initialize optimizer
+coordinates from constrained parameters rather than inside the optimization
+hot path.
 
 ```@index
 ```
