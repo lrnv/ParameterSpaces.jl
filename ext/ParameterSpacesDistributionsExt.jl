@@ -28,19 +28,6 @@ import ParameterSpaces: param_space
 # Distribution integration helpers
 # ---------------------------------------------------------------------------
 
-function _pd_space(symbol::Symbol, A)
-    n = size(A, 1)
-    name = nameof(typeof(A))
-
-    if name === :ScalMat
-        return Pos(symbol)
-    elseif name === :PDiagMat
-        return PosVec(symbol, n)
-    else
-        return SPD(symbol, n)
-    end
-end
-
 
 function _first_distribution_field(d)
     for name in propertynames(d)
@@ -212,17 +199,17 @@ end
 # Multivariate normal families.
 function param_space(d::MvNormal)
     μ, Σ = params(d)
-    return (RealVec(:μ, length(μ)), _pd_space(:Σ, Σ))
+    return (RealVec(:μ, length(μ)), SPD(:Σ, length(μ)))
 end
 
 function param_space(d::MvNormalCanon)
     h, J = params(d)
-    return (RealVec(:h, length(h)), _pd_space(:J, J))
+    return (RealVec(:h, length(h)), SPD(:Σ, length(μ)))
 end
 
 function param_space(d::MvLogNormal)
     μ, Σ = params(d)
-    return (RealVec(:μ, length(μ)), _pd_space(:Σ, Σ))
+    return (RealVec(:μ, length(μ)), SPD(:Σ, length(μ)))
 end
 
 param_space(d::MvLogitNormal) =
@@ -234,8 +221,8 @@ function param_space(d::MatrixNormal)
     m, n = size(M)
     return (
         RealMat(:M, m, n),
-        _pd_space(:U, U),
-        _pd_space(:V, V),
+        SPD(:U, m),
+        SPD(:V, n),
     )
 end
 
@@ -244,17 +231,17 @@ function param_space(d::Wishart)
     p = size(d, 1)
 
     if ν > p - 1
-        return (Lower(:ν, p - 1), _pd_space(:S, S))
+        return (Lower(:ν, p - 1), SPD(:S, p))
     else
         # Singular Wishart requires integer degrees of freedom; keep ν structural.
-        return _pd_space(:S, S)
+        return SPD(:S, p)
     end
 end
 
 function param_space(d::InverseWishart)
     ν, Ψ = params(d)
     p = size(d, 1)
-    return (Lower(:ν, p - 1), _pd_space(:Ψ, Ψ))
+    return (Lower(:ν, p - 1), SPD(:Ψ, p))
 end
 
 function param_space(d::MatrixTDist)
@@ -263,8 +250,8 @@ function param_space(d::MatrixTDist)
     return (
         Pos(:ν),
         RealMat(:M, m, n),
-        _pd_space(:Σ, Σ),
-        _pd_space(:Ω, Ω),
+        SPD(:Σ, m),
+        SPD(:Ω, n),
     )
 end
 
@@ -280,7 +267,7 @@ function param_space(d::MatrixFDist)
     return (
         Lower(:n1, p - 1),
         Lower(:n2, p - 1),
-        _pd_space(:B, B),
+        SPD(:B, size(B,1)),
     )
 end
 
