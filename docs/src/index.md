@@ -77,25 +77,24 @@ Tuples of parameter spaces form Cartesian product spaces. For example,
 param_space
 ```
 
-## Transformation API
+## Transformation interface
 
-```@docs
-AbstractParameterSpace
-dimension
-constrained_dimension
-parameter_symbols
-constrain
-unconstrain
-constrain_jac
-unconstrain_jac
-constrain_with_jac
-unconstrain_with_jac
-logabsdet_constrain_jac
-logabsdet_unconstrain_jac
-unconstrained_example
-constrained_example
-constrained_namedtuple
+Once a space `p` is available, the main public operations are:
+
+```julia
+η = constrain(p, θ)
+θ = unconstrain(p, η)
+
+J = constrain_jac(p, θ)
+Jinv = unconstrain_jac(p, η)
+
+η, J = constrain_with_jac(p, θ)
+θ, Jinv = unconstrain_with_jac(p, η)
 ```
+
+Use `dimension`, `constrained_dimension`, and `parameter_symbols` to inspect the
+space, and `logabsdet_constrain_jac` / `logabsdet_unconstrain_jac` for
+change-of-variables calculations when the Jacobian is square.
 
 ```@index
 ```
