@@ -65,8 +65,12 @@ ProbVec
 RealMat
 Simplex
 SPD
-Prefixed
 ```
+
+### Naming wrappers
+
+`Prefixed(prefix, space)` wraps an existing parameter space and prefixes all
+names returned by `parameter_symbols` without changing the transformation.
 
 Tuples of parameter spaces form Cartesian product spaces. For example,
 `(Id(:μ), Pos(:σ))` describes an unconstrained location and a positive scale.
