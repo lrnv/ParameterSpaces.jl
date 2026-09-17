@@ -1,3 +1,3 @@
 var documenterSearchIndex = {"docs":
-[{"category":"section","location":"#DistributionsParameterSpaces","page":"Home","text":"Documentation for DistributionsParameterSpaces.\n\n","title":"DistributionsParameterSpaces"}]
+[{"category":"section","location":"#ParameterSpaces","page":"Home","text":"Documentation for ParameterSpaces.\n\n","title":"ParameterSpaces"}]
 }
