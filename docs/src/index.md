@@ -69,8 +69,9 @@ SPD
 
 ### Naming wrappers
 
-`Prefixed(prefix, space)` wraps an existing parameter space and prefixes all
-names returned by `parameter_symbols` without changing the transformation.
+```@docs
+Prefixed
+```
 
 Tuples of parameter spaces form Cartesian product spaces. For example,
 `(Id(:μ), Pos(:σ))` describes an unconstrained location and a positive scale.
@@ -87,6 +88,7 @@ When the parameter space is completely determined by a `Distributions.jl`
 distribution type, the extension supports both the type and an instance:
 
 ```@example distribution-types
+using ParameterSpaces
 using Distributions
 
 parameter_symbols(param_space(Normal))
@@ -122,6 +124,31 @@ Jinv = unconstrain_jac(p, η)
 Use `dimension`, `constrained_dimension`, and `parameter_symbols` to inspect the
 space, and `logabsdet_constrain_jac` / `logabsdet_unconstrain_jac` for
 change-of-variables calculations when the Jacobian is square.
+
+### ForwardDiff integration
+
+When `ForwardDiff.jl` is loaded together with `ParameterSpaces.jl`, the optional
+ForwardDiff extension propagates dual-number partials through `constrain` using
+the analytical Jacobian already provided by the parameter space. This is the
+hot direction for unconstrained optimization: optimizer coordinates are mapped
+to valid constrained parameters before evaluating the objective. No additional
+user API is required:
+
+```julia
+using ForwardDiff, ParameterSpaces
+
+p = (Id(:μ), Pos(:σ))
+θ = [0.3, -0.2]
+
+ForwardDiff.jacobian(x -> constrain(p, x), θ)
+# equivalent to constrain_jac(p, θ)
+```
+
+The rule also composes with nested ForwardDiff differentiation, so higher-order
+derivatives of objectives that call `constrain` remain available. `unconstrain`
+keeps its ordinary implementation; it is primarily used to initialize optimizer
+coordinates from constrained parameters rather than inside the optimization
+hot path.
 
 ```@index
 ```

@@ -295,7 +295,7 @@ SPD(s::Symbol, n::Integer) = SPD{s}(n)
 """
     Prefixed(prefix::Symbol, space)
 
-Wrap a parameter space and prefix all names returned by [`parameter_symbols`](@ref)
+Wrap a parameter space and prefix all names returned by `parameter_symbols`
 with `prefix`. The transformation itself is unchanged.
 """
 Prefixed(prefix::Symbol, space) = Prefixed{prefix,typeof(space)}(space)
@@ -776,7 +776,6 @@ function unconstrain_with_jac(p::Simplex, η)
     end
     return θ, J
 end
-
 
 # ---------------------------------------------------------------------------
 # Symmetric positive-definite matrices, represented by lower triangles
