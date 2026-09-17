@@ -5,20 +5,24 @@ authors = ["Oskar Laverny"]
 
 [weakdeps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 
 [extensions]
 ParameterSpacesDistributionsExt = "Distributions"
+ParameterSpacesForwardDiffExt = "ForwardDiff"
 
 [compat]
 Aqua = "0.8"
 Distributions = "0.25"
+ForwardDiff = "0.10, 1"
 Test = "1"
 julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Test", "Distributions"]
+test = ["Aqua", "Test", "Distributions", "ForwardDiff"]
