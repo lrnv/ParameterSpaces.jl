@@ -204,7 +204,7 @@ end
 
 function param_space(d::MvNormalCanon)
     h, J = params(d)
-    return (RealVec(:h, length(h)), SPD(:Σ, length(μ)))
+    return (RealVec(:h, length(h)), SPD(:J, length(h)))
 end
 
 function param_space(d::MvLogNormal)
