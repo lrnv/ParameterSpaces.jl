@@ -1,14 +1,14 @@
-using DistributionsParameterSpaces
+using ParameterSpaces
 using Documenter
 
-DocMeta.setdocmeta!(DistributionsParameterSpaces, :DocTestSetup, :(using DistributionsParameterSpaces); recursive=true)
+DocMeta.setdocmeta!(ParameterSpaces, :DocTestSetup, :(using ParameterSpaces); recursive=true)
 
 makedocs(;
-    modules=[DistributionsParameterSpaces],
+    modules=[ParameterSpaces],
     authors="Oskar Laverny <oskar.laverny@univ-amu.fr> and contributors",
-    sitename="DistributionsParameterSpaces.jl",
+    sitename="ParameterSpaces.jl",
     format=Documenter.HTML(;
-        canonical="https://lrnv.github.io/DistributionsParameterSpaces.jl",
+        canonical="https://lrnv.github.io/ParameterSpaces.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -18,6 +18,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/lrnv/DistributionsParameterSpaces.jl",
+    repo="github.com/lrnv/ParameterSpaces.jl",
     devbranch="main",
 )

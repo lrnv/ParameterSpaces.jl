@@ -1,4 +1,4 @@
-module DistributionsParameterSpaces
+module ParameterSpaces
 
 using Distributions
 

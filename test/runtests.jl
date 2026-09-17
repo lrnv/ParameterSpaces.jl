@@ -1,13 +1,13 @@
 using Aqua
 using Distributions
-using DistributionsParameterSpaces
+using ParameterSpaces
 using Test
 
 @testset "Aqua" begin
-    Aqua.test_all(DistributionsParameterSpaces)
+    Aqua.test_all(ParameterSpaces)
 end
 
-@testset "DistributionsParameterSpaces.jl" begin
+@testset "ParameterSpaces.jl" begin
 
     @testset "Normal" begin
         d = Normal(0.0, 1.0)
@@ -789,7 +789,7 @@ end
     end
 
     @testset "SPD parameter space" begin
-        p = DistributionsParameterSpaces.SPD(:Σ, 3)
+        p = ParameterSpaces.SPD(:Σ, 3)
 
         @test dimension(p) == 6
         @test constrained_dimension(p) == 6
@@ -820,7 +820,7 @@ end
         )
 
         @test_throws DomainError unconstrain(
-            DistributionsParameterSpaces.SPD(:Σ, 2),
+            ParameterSpaces.SPD(:Σ, 2),
             [1.0, 2.0, 1.0],
         )
     end

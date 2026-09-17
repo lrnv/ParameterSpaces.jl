@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = DistributionsParameterSpaces
+CurrentModule = ParameterSpaces
 ```
 
-# DistributionsParameterSpaces
+# ParameterSpaces
 
-Documentation for [DistributionsParameterSpaces](https://github.com/lrnv/DistributionsParameterSpaces.jl).
+Documentation for [ParameterSpaces](https://github.com/lrnv/ParameterSpaces.jl).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [DistributionsParameterSpaces]
+Modules = [ParameterSpaces]
 ```

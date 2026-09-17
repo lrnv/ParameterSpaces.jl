@@ -1,4 +1,4 @@
-using DistributionsParameterSpaces
+using ParameterSpaces
 using BenchmarkTools
 
 SUITE = BenchmarkGroup()
