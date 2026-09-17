@@ -46,6 +46,11 @@ ProbOpen
 ProbOpenLeft
 ProbOpenRight
 Lower
+LowerClosed
+Bounded
+BoundedOpen
+BoundedOpenLeft
+BoundedOpenRight
 ```
 
 ### Related scalar parameters
@@ -54,6 +59,7 @@ Lower
 Ordered
 PosOrdered
 Between
+BilinearQuad
 ```
 
 ### Vector, matrix, and structured spaces
@@ -75,6 +81,11 @@ Prefixed
 
 Tuples of parameter spaces form Cartesian product spaces. For example,
 `(Id(:μ), Pos(:σ))` describes an unconstrained location and a positive scale.
+
+`BilinearQuad` is useful when two parameters occupy a coupled quadrilateral
+rather than an axis-aligned box. Its four corners define a generic bilinear
+chart; no application-specific geometry needs to live outside
+`ParameterSpaces.jl`.
 
 ## Object mapping
 
@@ -128,11 +139,15 @@ change-of-variables calculations when the Jacobian is square.
 ### ForwardDiff integration
 
 When `ForwardDiff.jl` is loaded together with `ParameterSpaces.jl`, the optional
-ForwardDiff extension propagates dual-number partials through `constrain` using
-the analytical Jacobian already provided by the parameter space. This is the
-hot direction for unconstrained optimization: optimizer coordinates are mapped
-to valid constrained parameters before evaluating the objective. No additional
-user API is required:
+ForwardDiff extension uses two complementary paths through `constrain`.
+Separable scalar and elementwise maps are traced directly, and Cartesian
+products are propagated block by block without materializing a global block-
+diagonal Jacobian. Genuinely coupled spaces continue to propagate partials via
+the analytical Jacobian supplied by the parameter space. This keeps one
+analytical source of truth where it matters while avoiding Jacobian allocation
+overhead for tiny scalar products in optimizer hot loops.
+
+No additional user API is required:
 
 ```julia
 using ForwardDiff, ParameterSpaces
