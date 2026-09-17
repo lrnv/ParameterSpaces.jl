@@ -69,8 +69,9 @@ SPD
 
 ### Naming wrappers
 
-`Prefixed(prefix, space)` wraps an existing parameter space and prefixes all
-names returned by `parameter_symbols` without changing the transformation.
+```@docs
+Prefixed
+```
 
 Tuples of parameter spaces form Cartesian product spaces. For example,
 `(Id(:μ), Pos(:σ))` describes an unconstrained location and a positive scale.
@@ -87,6 +88,7 @@ When the parameter space is completely determined by a `Distributions.jl`
 distribution type, the extension supports both the type and an instance:
 
 ```@example distribution-types
+using ParameterSpaces
 using Distributions
 
 parameter_symbols(param_space(Normal))
