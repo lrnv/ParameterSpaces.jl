@@ -123,5 +123,25 @@ Use `dimension`, `constrained_dimension`, and `parameter_symbols` to inspect the
 space, and `logabsdet_constrain_jac` / `logabsdet_unconstrain_jac` for
 change-of-variables calculations when the Jacobian is square.
 
+### ForwardDiff integration
+
+When `ForwardDiff.jl` is loaded together with `ParameterSpaces.jl`, the optional
+ForwardDiff extension propagates dual-number partials through `constrain` and
+`unconstrain` using the analytical Jacobians already provided by the parameter
+space. No additional user API is required:
+
+```julia
+using ForwardDiff, ParameterSpaces
+
+p = (Id(:μ), Pos(:σ))
+θ = [0.3, -0.2]
+
+ForwardDiff.jacobian(x -> constrain(p, x), θ)
+# equivalent to constrain_jac(p, θ)
+```
+
+The rule also composes with nested ForwardDiff differentiation, so higher-order
+derivatives of objectives that call `constrain` remain available.
+
 ```@index
 ```
