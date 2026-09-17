@@ -2,7 +2,7 @@ module ParameterSpacesForwardDiffExt
 
 using ForwardDiff
 import ParameterSpaces
-import ParameterSpaces: constrain, unconstrain
+import ParameterSpaces: constrain
 
 @inline function _pushforward_partials(J, x, i, k)
     return mapreduce(
@@ -30,15 +30,6 @@ function constrain(
     primal = ForwardDiff.value.(θ)
     η, J = ParameterSpaces.constrain_with_jac(p, primal)
     return _lift_duals(T, Val(N), θ, η, J)
-end
-
-function unconstrain(
-    p,
-    η::AbstractVector{<:ForwardDiff.Dual{T,V,N}},
-) where {T,V,N}
-    primal = ForwardDiff.value.(η)
-    θ, Jinv = ParameterSpaces.unconstrain_with_jac(p, primal)
-    return _lift_duals(T, Val(N), η, θ, Jinv)
 end
 
 end
