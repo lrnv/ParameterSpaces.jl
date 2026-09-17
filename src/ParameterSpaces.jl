@@ -11,9 +11,15 @@ export AbstractParameterSpace,
        ProbOpenLeft,
        ProbOpenRight,
        Lower,
+       LowerClosed,
+       Bounded,
+       BoundedOpen,
+       BoundedOpenLeft,
+       BoundedOpenRight,
        Ordered,
        PosOrdered,
        Between,
+       BilinearQuad,
        Simplex,
        SPD,
        Prefixed,
@@ -62,8 +68,12 @@ struct IdentityDomain <: AbstractScalarDomain end
 struct ExpDomain{AllowZero} <: AbstractScalarDomain end
 struct NegativeExpDomain <: AbstractScalarDomain end
 struct ProbabilityDomain{LeftClosed,RightClosed} <: AbstractScalarDomain end
-struct LowerDomain{T} <: AbstractScalarDomain
+struct LowerDomain{AllowEqual,T} <: AbstractScalarDomain
     lower::T
+end
+struct BoundedDomain{LeftClosed,RightClosed,L,U} <: AbstractScalarDomain
+    lower::L
+    upper::U
 end
 
 struct ScalarSpace{S,D<:AbstractScalarDomain} <: AbstractSeparableParameterSpace
@@ -80,6 +90,14 @@ struct OrderedSpace{A,B,D<:AbstractScalarDomain} <: AbstractParameterSpace
 end
 
 struct Between{A,B,C} <: AbstractParameterSpace end
+
+struct BilinearQuad{A,B,T} <: AbstractParameterSpace
+    p00::NTuple{2,T}
+    p10::NTuple{2,T}
+    p01::NTuple{2,T}
+    p11::NTuple{2,T}
+end
+
 struct NIG{M,A,B,D} <: AbstractParameterSpace end
 
 struct Simplex{S} <: AbstractParameterSpace
@@ -119,6 +137,12 @@ _elementwise(s::Symbol, d::D, dims::NTuple{N,Int}) where {D<:AbstractScalarDomai
 
 _ordered(a::Symbol, b::Symbol, d::D) where {D<:AbstractScalarDomain} =
     OrderedSpace{a,b,D}(d)
+
+function _bounded(s::Symbol, lower, upper, ::Val{LC}, ::Val{RC}) where {LC,RC}
+    lower < upper || throw(ArgumentError("lower bound must be smaller than upper bound"))
+    d = BoundedDomain{LC,RC,typeof(lower),typeof(upper)}(lower, upper)
+    return _scalar(s, d)
+end
 
 """
     Id(name::Symbol)
@@ -184,7 +208,46 @@ ProbOpenRight(s::Symbol) = _scalar(s, ProbabilityDomain{true,false}())
 A scalar parameter named `name` constrained to be strictly greater than
 `lower`.
 """
-Lower(s::Symbol, lower) = _scalar(s, LowerDomain(lower))
+Lower(s::Symbol, lower) = _scalar(s, LowerDomain{false,typeof(lower)}(lower))
+
+"""
+    LowerClosed(name::Symbol, lower)
+
+A scalar parameter named `name` constrained to be greater than or equal to
+`lower`. Finite unconstrained coordinates map strictly above the bound; the
+boundary value maps back to `-Inf`.
+"""
+LowerClosed(s::Symbol, lower) = _scalar(s, LowerDomain{true,typeof(lower)}(lower))
+
+"""
+    Bounded(name::Symbol, lower, upper)
+
+A scalar parameter in the closed interval `[lower, upper]`. Finite
+unconstrained coordinates map to the open interval; endpoints map back to
+infinite coordinates.
+"""
+Bounded(s::Symbol, lower, upper) = _bounded(s, lower, upper, Val(true), Val(true))
+
+"""
+    BoundedOpen(name::Symbol, lower, upper)
+
+A scalar parameter in the open interval `(lower, upper)`.
+"""
+BoundedOpen(s::Symbol, lower, upper) = _bounded(s, lower, upper, Val(false), Val(false))
+
+"""
+    BoundedOpenLeft(name::Symbol, lower, upper)
+
+A scalar parameter in `(lower, upper]`.
+"""
+BoundedOpenLeft(s::Symbol, lower, upper) = _bounded(s, lower, upper, Val(false), Val(true))
+
+"""
+    BoundedOpenRight(name::Symbol, lower, upper)
+
+A scalar parameter in `[lower, upper)`.
+"""
+BoundedOpenRight(s::Symbol, lower, upper) = _bounded(s, lower, upper, Val(true), Val(false))
 
 """
     Ordered(first::Symbol, second::Symbol)
@@ -207,6 +270,64 @@ Three scalar parameters satisfying `lower ≤ value ≤ upper`. Finite
 unconstrained coordinates map to the interior `lower < value < upper`.
 """
 Between(a::Symbol, b::Symbol, c::Symbol) = Between{a,b,c}()
+
+@inline _cross2(a, b) = a[1] * b[2] - a[2] * b[1]
+
+function _point2(p)
+    length(p) == 2 || throw(DimensionMismatch("quadrilateral corners must have two coordinates"))
+    return (p[1], p[2])
+end
+
+function _bilinear_basis(p::BilinearQuad)
+    e = (p.p10[1] - p.p00[1], p.p10[2] - p.p00[2])
+    f = (p.p01[1] - p.p00[1], p.p01[2] - p.p00[2])
+    g = (
+        p.p11[1] - p.p10[1] - p.p01[1] + p.p00[1],
+        p.p11[2] - p.p10[2] - p.p01[2] + p.p00[2],
+    )
+    return e, f, g
+end
+
+function _validate_bilinear_quad(p::BilinearQuad)
+    e, f, g = _bilinear_basis(p)
+    eg = (e[1] + g[1], e[2] + g[2])
+    fg = (f[1] + g[1], f[2] + g[2])
+    dets = (
+        _cross2(e, f),
+        _cross2(e, fg),
+        _cross2(eg, f),
+        _cross2(eg, fg),
+    )
+    positive = all(d -> d > zero(d), dets)
+    negative = all(d -> d < zero(d), dets)
+    positive || negative || throw(ArgumentError(
+        "BilinearQuad corners must define a nondegenerate, non-folded quadrilateral",
+    ))
+    return p
+end
+
+"""
+    BilinearQuad(first::Symbol, second::Symbol, p00, p10, p01, p11)
+
+A two-parameter space obtained by mapping the open unit square bilinearly onto
+a nondegenerate quadrilateral. `p00`, `p10`, `p01`, and `p11` are its two-
+coordinate corners corresponding to latent square coordinates `(0,0)`,
+`(1,0)`, `(0,1)`, and `(1,1)`.
+
+Finite unconstrained coordinates first pass through logistic maps, so they land
+in the quadrilateral interior. Feasible boundary points are accepted by
+`unconstrain` and map to infinite coordinates. The constructor rejects corner
+orders for which the bilinear map folds or becomes singular inside the square.
+"""
+function BilinearQuad(a::Symbol, b::Symbol, p00, p10, p01, p11)
+    raw = (_point2(p00), _point2(p10), _point2(p01), _point2(p11))
+    T = promote_type((typeof(x) for p in raw for x in p)...)
+    corners = ntuple(4) do i
+        (convert(T, raw[i][1]), convert(T, raw[i][2]))
+    end
+    p = BilinearQuad{a,b,T}(corners...)
+    return _validate_bilinear_quad(p)
+end
 
 # Internal specialized space used by the Distributions.jl extension.
 NIG(μ::Symbol, α::Symbol, β::Symbol, δ::Symbol) = NIG{μ,α,β,δ}()
@@ -312,6 +433,7 @@ parameter_symbols(p::ScalarSpace) = (parameter_symbol(p),)
 
 parameter_symbols(::OrderedSpace{A,B}) where {A,B} = (A, B)
 parameter_symbols(::Between{A,B,C}) where {A,B,C} = (A, B, C)
+parameter_symbols(::BilinearQuad{A,B}) where {A,B} = (A, B)
 parameter_symbols(::NIG{M,A,B,D}) where {M,A,B,D} = (M, A, B, D)
 
 parameter_symbols(p::Simplex{S}) where {S} =
@@ -352,6 +474,7 @@ parameter_symbols(p::Prefixed{P}) where {P} =
 dimension(::ScalarSpace) = 1
 dimension(::OrderedSpace) = 2
 dimension(::Between) = 3
+dimension(::BilinearQuad) = 2
 dimension(::NIG) = 4
 dimension(p::Simplex) = p.n - 1
 dimension(p::ElementwiseSpace) = prod(p.dims)
@@ -514,10 +637,34 @@ function _constrain_scalar(d::LowerDomain, θ)
     return d.lower + w, w
 end
 
-function _unconstrain_scalar(d::LowerDomain, η)
-    η > d.lower ||
-        throw(DomainError(η, "parameter must be strictly greater than $(d.lower)"))
+function _unconstrain_scalar(d::LowerDomain{AllowEqual}, η) where {AllowEqual}
+    valid = AllowEqual ? η >= d.lower : η > d.lower
+    valid || throw(DomainError(
+        η,
+        AllowEqual ?
+            "parameter must be greater than or equal to $(d.lower)" :
+            "parameter must be strictly greater than $(d.lower)",
+    ))
     return log(η - d.lower)
+end
+
+function _constrain_scalar(d::BoundedDomain, θ)
+    q, dq = _constrain_scalar(ProbabilityDomain{true,true}(), θ)
+    span = d.upper - d.lower
+    return d.lower + span * q, span * dq
+end
+
+function _unconstrain_scalar(d::BoundedDomain{LC,RC}, η) where {LC,RC}
+    left_ok = LC ? η >= d.lower : η > d.lower
+    right_ok = RC ? η <= d.upper : η < d.upper
+    left_ok && right_ok || throw(DomainError(
+        η,
+        "parameter must belong to " *
+        (LC ? "[$(d.lower), $(d.upper)" : "($(d.lower), $(d.upper)") *
+        (RC ? "]" : ")"),
+    ))
+    q = (η - d.lower) / (d.upper - d.lower)
+    return _unconstrain_scalar(ProbabilityDomain{LC,RC}(), q)
 end
 
 
@@ -657,6 +804,106 @@ function unconstrain_with_jac(p::Between, η)
         -inv(w)   inv(w)            zero(w)
         -inv(ca)  -inv(bc)          inv(ca)+inv(bc)
     ]
+end
+
+
+# ---------------------------------------------------------------------------
+# Bilinear maps from the unit square to a quadrilateral
+# ---------------------------------------------------------------------------
+
+@inline function _bilinear_eval(p::BilinearQuad, u, v)
+    e, f, g = _bilinear_basis(p)
+    point = (
+        p.p00[1] + u * e[1] + v * f[1] + u * v * g[1],
+        p.p00[2] + u * e[2] + v * f[2] + u * v * g[2],
+    )
+    du = (e[1] + v * g[1], e[2] + v * g[2])
+    dv = (f[1] + u * g[1], f[2] + u * g[2])
+    return point, du, dv
+end
+
+function constrain_with_jac(p::BilinearQuad, θ)
+    _check_dimension(p, θ)
+    u, du = _constrain_scalar(ProbabilityDomain{true,true}(), θ[1])
+    v, dv = _constrain_scalar(ProbabilityDomain{true,true}(), θ[2])
+    point, dpoint_du, dpoint_dv = _bilinear_eval(p, u, v)
+    J = [
+        dpoint_du[1] * du   dpoint_dv[1] * dv
+        dpoint_du[2] * du   dpoint_dv[2] * dv
+    ]
+    return _promoted_vector(point), J
+end
+
+function _bilinear_inverse_candidate(p::BilinearQuad, y, u)
+    e, f, g = _bilinear_basis(p)
+    h = (f[1] + u * g[1], f[2] + u * g[2])
+    rhs = (
+        y[1] - p.p00[1] - u * e[1],
+        y[2] - p.p00[2] - u * e[2],
+    )
+    if abs(h[1]) >= abs(h[2])
+        iszero(h[1]) && return nothing
+        v = rhs[1] / h[1]
+    else
+        iszero(h[2]) && return nothing
+        v = rhs[2] / h[2]
+    end
+    point, _, _ = _bilinear_eval(p, u, v)
+    residual = abs(point[1] - y[1]) + abs(point[2] - y[2])
+    return (u=u, v=v, residual=residual)
+end
+
+function _bilinear_inverse(p::BilinearQuad, y)
+    e, f, g = _bilinear_basis(p)
+    r = (y[1] - p.p00[1], y[2] - p.p00[2])
+    A = -_cross2(e, g)
+    B = _cross2(r, g) - _cross2(e, f)
+    C = _cross2(r, f)
+
+    roots = if iszero(A)
+        iszero(B) && throw(DomainError(y, "point is not uniquely invertible in this quadrilateral"))
+        (-C / B,)
+    else
+        disc = B * B - 4 * A * C
+        scale = max(abs(B * B), abs(4 * A * C), one(abs(disc)))
+        tol = 64 * eps(float(one(disc))) * scale
+        disc < -tol && throw(DomainError(y, "point lies outside the quadrilateral"))
+        disc = max(disc, zero(disc))
+        root = sqrt(disc)
+        ((-B - root) / (2 * A), (-B + root) / (2 * A))
+    end
+
+    candidates = Any[]
+    for u in roots
+        candidate = _bilinear_inverse_candidate(p, y, u)
+        isnothing(candidate) && continue
+        tol = 64 * sqrt(eps(float(one(candidate.u))))
+        if -tol <= candidate.u <= one(candidate.u) + tol &&
+                -tol <= candidate.v <= one(candidate.v) + tol
+            push!(candidates, candidate)
+        end
+    end
+    isempty(candidates) && throw(DomainError(y, "point lies outside the quadrilateral"))
+    candidate = candidates[argmin(c -> c.residual, candidates)]
+    u = clamp(candidate.u, zero(candidate.u), one(candidate.u))
+    v = clamp(candidate.v, zero(candidate.v), one(candidate.v))
+    return u, v
+end
+
+function unconstrain(p::BilinearQuad, η)
+    _check_constrained_dimension(p, η)
+    u, v = _bilinear_inverse(p, η)
+    q = ProbabilityDomain{true,true}()
+    return _promoted_vector((_unconstrain_scalar(q, u), _unconstrain_scalar(q, v)))
+end
+
+function unconstrain_with_jac(p::BilinearQuad, η)
+    θ = unconstrain(p, η)
+    _, J = constrain_with_jac(p, θ)
+    a, b, c, d = J[1, 1], J[1, 2], J[2, 1], J[2, 2]
+    det = a * d - b * c
+    iszero(det) && throw(DomainError(η, "inverse Jacobian is undefined on the quadrilateral boundary"))
+    return θ, [d -b; -c a] / det
 end
 
 
@@ -973,6 +1220,15 @@ function logabsdet_constrain_jac(p::Between, θ)
 end
 
 logabsdet_unconstrain_jac(p::Between, η) =
+    -logabsdet_constrain_jac(p, unconstrain(p, η))
+
+function logabsdet_constrain_jac(p::BilinearQuad, θ)
+    _check_dimension(p, θ)
+    _, J = constrain_with_jac(p, θ)
+    return log(abs(J[1, 1] * J[2, 2] - J[1, 2] * J[2, 1]))
+end
+
+logabsdet_unconstrain_jac(p::BilinearQuad, η) =
     -logabsdet_constrain_jac(p, unconstrain(p, η))
 
 function logabsdet_constrain_jac(p::NIG, θ)
