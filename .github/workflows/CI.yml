@@ -70,6 +70,6 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Documenter: DocMeta, doctest
-          using Paramoprh
-          DocMeta.setdocmeta!(Paramoprh, :DocTestSetup, :(using Paramoprh); recursive=true)
-          doctest(Paramoprh)
+          using Paramorph
+          DocMeta.setdocmeta!(Paramorph, :DocTestSetup, :(using Paramorph); recursive=true)
+          doctest(Paramorph)

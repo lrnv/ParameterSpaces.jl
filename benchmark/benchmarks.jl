@@ -1,4 +1,4 @@
-using Paramoprh
+using Paramorph
 using BenchmarkTools
 
 SUITE = BenchmarkGroup()

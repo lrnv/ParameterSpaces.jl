@@ -1,14 +1,14 @@
-using Paramoprh
+using Paramorph
 using Documenter
 
-DocMeta.setdocmeta!(Paramoprh, :DocTestSetup, :(using Paramoprh); recursive=true)
+DocMeta.setdocmeta!(Paramorph, :DocTestSetup, :(using Paramorph); recursive=true)
 
 makedocs(;
-    modules=[Paramoprh],
+    modules=[Paramorph],
     authors="Oskar Laverny <oskar.laverny@univ-amu.fr> and contributors",
-    sitename="Paramoprh.jl",
+    sitename="Paramorph.jl",
     format=Documenter.HTML(;
-        canonical="https://lrnv.github.io/Paramoprh.jl",
+        canonical="https://lrnv.github.io/Paramorph.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -18,6 +18,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/lrnv/Paramoprh.jl",
+    repo="github.com/lrnv/Paramorph.jl",
     devbranch="main",
 )

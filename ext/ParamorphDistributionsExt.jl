@@ -1,7 +1,7 @@
-module ParamoprhDistributionsExt
+module ParamorphDistributionsExt
 
 using Distributions
-using Paramoprh: AbstractParameterSpace,
+using Paramorph: AbstractParameterSpace,
                        Between,
                        Id,
                        Lower,
@@ -22,7 +22,7 @@ using Paramoprh: AbstractParameterSpace,
                        RealVec,
                        SPD,
                        Simplex
-import Paramoprh: param_space
+import Paramorph: param_space
 
 # ---------------------------------------------------------------------------
 # Distribution integration helpers

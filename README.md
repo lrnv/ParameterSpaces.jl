@@ -1,6 +1,6 @@
-# Paramoprh.jl
+# Paramorph.jl
 
-`Paramoprh.jl` does one thing: it describes how model parameters are
+`Paramorph.jl` does one thing: it describes how model parameters are
 represented in unconstrained Euclidean coordinates and how to map them back to
 their natural constrained Julia values.
 
@@ -31,7 +31,7 @@ A parameter space connects two deliberately different representations:
   matrix, and a product of logical parameters is a tuple.
 
 ```julia
-using Paramoprh
+using Paramorph
 
 p = (
     RealVec(:μ, 3),
@@ -73,7 +73,7 @@ example(p) == constrain(p, zeros(dimension(p)))
 `param_space` is the only hook downstream packages normally extend:
 
 ```julia
-import Paramoprh: param_space
+import Paramorph: param_space
 
 struct MyModel end
 
@@ -87,7 +87,7 @@ The bundled `Distributions.jl` extension uses exactly this mechanism while the
 core package remains independent of `Distributions.jl`.
 
 ```julia
-using Distributions, Paramoprh
+using Distributions, Paramorph
 
 X = MvNormal(3, 1 / 2)
 p = param_space(X)
@@ -112,7 +112,7 @@ same five functions regardless of which spaces are composed.
 
 ## Automatic differentiation
 
-`Paramoprh.jl` does not implement differentiation rules or maintain an AD
+`Paramorph.jl` does not implement differentiation rules or maintain an AD
 extension. `constrain` is ordinary generic Julia code, so differentiation can
 pass through naturally:
 
