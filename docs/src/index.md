@@ -52,6 +52,10 @@ param_space(m::MyModel) = (
 
 ### `dimension`
 
+```@docs
+dimension
+```
+
 `dimension(p)` is the number of scalar coordinates in the **unconstrained**
 representation. Equivalently, `constrain(p, θ)` expects
 `length(θ) == dimension(p)`.
@@ -65,6 +69,10 @@ dimension(p) == 3
 ```
 
 ### `names`
+
+```@docs
+names
+```
 
 `names(p)` returns the names of the **logical constrained parameters**. A vector
 or matrix parameter has one name, not one name per scalar entry.
@@ -81,6 +89,10 @@ the same length.
 
 ### `example`
 
+```@docs
+example
+```
+
 `example(p)` returns one canonical value in the constrained representation. It
 is defined from the origin of the unconstrained chart:
 
@@ -92,6 +104,10 @@ It is intended as a convenient valid representative of the space, not as a
 statistical default or fitted value.
 
 ### `constrain`
+
+```@docs
+constrain
+```
 
 `constrain(p, θ)` maps a flat unconstrained vector to its natural constrained
 representation.
@@ -122,6 +138,10 @@ The constrained side is therefore not flattened merely for the convenience of
 an optimizer.
 
 ### `unconstrain`
+
+```@docs
+unconstrain
+```
 
 `unconstrain(p, η)` performs the inverse transformation: it accepts the natural
 constrained value and returns the flat unconstrained vector.
