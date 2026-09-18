@@ -146,8 +146,6 @@ function example(p)
     return constrain(p, zeros(dimension(p)))
 end
 
-
-
 abstract type AbstractParameterSpace end
 abstract type AbstractScalarDomain end
 
@@ -544,7 +542,10 @@ function constrain(p::ScalarSpace, θ)
 end
 
 unconstrain(p::ScalarSpace, η::Tuple) = [_unconstrain_scalar(p.domain, η[1])]
-unconstrain(p::ScalarSpace, η::Number) = [_unconstrain_scalar(p.domain, η)]
+
+unconstrain(p::ScalarSpace, η::NTuple{1}) =
+    unconstrain(p, only(η))
+
 
 function constrain(p::ElementwiseSpace, θ)
     _check_dimension(p, θ)
@@ -559,6 +560,9 @@ function unconstrain(p::ElementwiseSpace, η::AbstractArray)
     ))
     return _promoted_vector([_unconstrain_scalar(p.domain, x) for x in vec(η)])
 end
+
+unconstrain(p::ElementwiseSpace, η::NTuple{1}) =
+    unconstrain(p, only(η))
 
 # ---------------------------------------------------------------------------
 # Product spaces
@@ -695,6 +699,11 @@ function unconstrain(p::Simplex, η::AbstractVector)
     ])
 end
 
+unconstrain(p::Simplex, η::NTuple{1}) =
+    unconstrain(p, only(η))
+
+
+
 # ---------------------------------------------------------------------------
 # Symmetric positive-definite matrices
 # ---------------------------------------------------------------------------
@@ -754,6 +763,10 @@ function unconstrain(p::SPD, S)
     return θ
 end
 
+unconstrain(p::SPD, η::NTuple{1}) =
+    unconstrain(p, only(η))
+
+
 # Prefixes alter names only, never values or transformations.
 constrain(p::Prefixed, θ) = constrain(p.space, θ)
 unconstrain(p::Prefixed, η) = unconstrain(p.space, η)
@@ -809,5 +822,11 @@ function unconstrain(p::Correlation, R)
 
     return θ
 end
+
+
+unconstrain(p::Correlation, η::NTuple{1}) =
+    unconstrain(p, only(η))
+
+
 
 end # module
