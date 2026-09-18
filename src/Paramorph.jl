@@ -727,7 +727,7 @@ function _spd_cholesky_from_theta(p::SPD, θ)
 end
 
 function constrain(p::SPD, θ)
-    L = _spd_cholesky_from_matrix(p, θ)
+    L = _spd_cholesky_from_theta(p, θ)
     return L * transpose(L)
 end
 
