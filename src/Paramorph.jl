@@ -4,7 +4,7 @@ import Base.names as names
 
 export AbstractParameterSpace, param_space
 
-export Id, Pos, NonNeg, Neg, Prob, ProbOpen, ProbOpenLeft, ProbOpenRight, Lower, LowerClosed, Bounded, BoundedOpen, BoundedOpenLeft, BoundedOpenRight, Ordered, PosOrdered, Between, Simplex, SPD, Prefixed, PosVec, ProbVec, RealVec, RealMat, Correlation
+export Id, Pos, NonNeg, Neg, Prob, ProbOpen, ProbOpenLeft, ProbOpenRight, Lower, LowerClosed, Bounded, BoundedOpen, BoundedOpenLeft, BoundedOpenRight, Ordered, PosOrdered, Between, Simplex, SPD, Prefixed, PosVec, NonNegVec, LowerClosedVec, ProbVec, RealVec, RealMat, Correlation
 
 export dimension, constrain, unconstrain, names, example
 
@@ -300,6 +300,18 @@ NIG(μ::Symbol, α::Symbol, β::Symbol, δ::Symbol) = NIG{μ,α,β,δ}()
 function PosVec(name::Symbol, n::Integer)
     n > 0 || throw(ArgumentError("dimension must be positive"))
     return _elementwise(name, ExpDomain{false}(), (Int(n),))
+end
+
+"""An `n`-component vector parameter with nonnegative entries."""
+function NonNegVec(name::Symbol, n::Integer)
+    n > 0 || throw(ArgumentError("dimension must be positive"))
+    return _elementwise(name, ExpDomain{true}(), (Int(n),))
+end
+
+"""An `n`-component vector parameter with entries greater than or equal to `lower`."""
+function LowerClosedVec(name::Symbol, lower, n::Integer)
+    n > 0 || throw(ArgumentError("dimension must be positive"))
+    return _elementwise(name, LowerDomain{true,typeof(lower)}(lower), (Int(n),))
 end
 
 """An `n`-component vector parameter with entries in `[0, 1]`."""
