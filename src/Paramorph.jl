@@ -271,10 +271,10 @@ Bounded(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(true), Va
 BoundedOpen(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(false), Val(false))
 
 """A scalar parameter in `(lower, upper]`."""
-BoundedOpenLeft(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(false,true))
+BoundedOpenLeft(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(false), Val(true))
 
 """A scalar parameter in `[lower, upper)`."""
-BoundedOpenRight(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(true,false))
+BoundedOpenRight(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(true), Val(false))
 
 """Two real scalar parameters satisfying `first < second`."""
 Ordered(first::Symbol, second::Symbol) = _ordered(first, second, IdentityDomain())
@@ -727,7 +727,7 @@ function _spd_cholesky_from_theta(p::SPD, θ)
 end
 
 function constrain(p::SPD, θ)
-    L = _spd_cholesky_from_theta(p, θ)
+    L = _spd_cholesky_from_matrix(p, θ)
     return L * transpose(L)
 end
 
