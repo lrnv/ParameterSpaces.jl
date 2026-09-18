@@ -24,6 +24,11 @@ end
         @test_throws DomainError unconstrain(ProbOpen(:p), 0.0)
     end
 
+    @testset "scalar spaces tuple entries" begin
+        p = Pos(:σ)
+        @test unconstrain(p, (1.0,)) == [0.0]
+    end
+
     @testset "natural vector and matrix values" begin
         pv = RealVec(:μ, 3)
         @test dimension(pv) == 3

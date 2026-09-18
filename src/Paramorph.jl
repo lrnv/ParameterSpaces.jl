@@ -523,6 +523,7 @@ function constrain(p::ScalarSpace, θ)
     return _constrain_scalar(p.domain, θ[1])
 end
 
+unconstrain(p::ScalarSpace, η::Tuple) = [_unconstrain_scalar(p.domain, η[1])]
 unconstrain(p::ScalarSpace, η::Number) = [_unconstrain_scalar(p.domain, η)]
 
 function constrain(p::ElementwiseSpace, θ)
