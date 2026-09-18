@@ -107,6 +107,8 @@ Between
 RealVec
 PosVec
 ProbVec
+NonNegVec
+LowerClosedVec
 RealMat
 Simplex
 SPD
