@@ -48,6 +48,8 @@ Paramorph takes a different starting point. Rather than asking *how to flatten t
 
 This makes the parameter space independent of any particular current parameter value, optimizer, inference algorithm, prior distribution, AD backend, or Jacobian convention. Paramorph is therefore intended primarily as a small interoperability layer: model packages describe their parameter spaces once, and generic numerical tools can consume that description without knowing how the model itself is implemented.
 
+One last difference is that `Paramorph` has no dependencies.
+
 
 ## The two representations
 
