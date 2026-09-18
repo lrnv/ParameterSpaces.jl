@@ -31,6 +31,24 @@ That is the whole interface. Everything else exported by the package (`Pos`,
 `Simplex`, `SPD`, `Correlation`, ...) is vocabulary for describing a parameter
 space.
 
+## Other approaches
+
+Several Julia packages address related parts of the parameter-representation problem, but with different abstractions and goals:
+
+- [`TransformVariables.jl`](https://github.com/tpapp/TransformVariables.jl) provides composable transformations from unconstrained Euclidean vectors to constrained, structured values, with first-class support for inverses and log-Jacobian determinants. It is particularly well suited to change-of-variables problems in Bayesian inference and MCMC.
+- [`ParameterHandling.jl`](https://github.com/JuliaGaussianProcesses/ParameterHandling.jl) starts from structured parameter values and provides recursive `flatten`/`unflatten` machinery, together with parameter wrappers such as positive or bounded parameters. Its main goal is to bridge convenient Julia data structures and flat representations used by optimizers and inference algorithms.
+- [`DifferentiableFlatten.jl`](https://github.com/JuliaNonconvex/DifferentiableFlatten.jl) focuses on differentiable flattening and reconstruction of arbitrary Julia data structures. It handles the structural problem of mapping nested objects to vectors, rather than describing the geometry or constraints of a model's parameter space.
+- [`ModelWrappers.jl`](https://github.com/paschermayr/ModelWrappers.jl) provides a higher-level framework around structured model parameters, combining flattening, constraints, bijectors, Jacobian corrections, mutable model state, and automatic differentiation utilities.
+
+Paramorph takes a different starting point. Rather than asking *how to flatten this value* or *which transformation should be applied to this vector*, it asks:
+
+> **What is the parameter space of this object?**
+
+`param_space` is an open interface associating a Julia object or type with a declarative description of its logical parameters and their geometry. From that description, Paramorph derives the unconstrained dimension, parameter names, a canonical example, and the maps between flat Euclidean coordinates and natural constrained Julia values.
+
+This makes the parameter space independent of any particular current parameter value, optimizer, inference algorithm, prior distribution, AD backend, or Jacobian convention. Paramorph is therefore intended primarily as a small interoperability layer: model packages describe their parameter spaces once, and generic numerical tools can consume that description without knowing how the model itself is implemented.
+
+
 ## The two representations
 
 A parameter space connects two deliberately different representations:
