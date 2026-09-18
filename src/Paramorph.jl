@@ -1,4 +1,4 @@
-module ParameterSpaces
+module Paramorph
 
 import Base.names as names
 
@@ -13,7 +13,7 @@ export dimension, constrain, unconstrain, names, example
 
 Return the parameter-space description associated with `object`.
 
-`param_space` is an open generic function. ParameterSpaces.jl provides the
+`param_space` is an open generic function. Paramoprh.jl provides the
 space constructors and transformations, while downstream packages define
 methods for their own objects.
 """

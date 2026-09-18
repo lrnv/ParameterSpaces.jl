@@ -1,4 +1,4 @@
-name = "ParameterSpaces"
+name = "Paramoprh"
 uuid = "4f407bf5-e3e8-4a0e-b0aa-de5e22a062cc"
 version = "0.0.1"
 authors = ["Oskar Laverny"]
@@ -7,7 +7,7 @@ authors = ["Oskar Laverny"]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 
 [extensions]
-ParameterSpacesDistributionsExt = "Distributions"
+ParamoprhDistributionsExt = "Distributions"
 
 [compat]
 Aqua = "0.8"

@@ -1,4 +1,4 @@
-using ParameterSpaces
+using Paramoprh
 using BenchmarkTools
 
 SUITE = BenchmarkGroup()

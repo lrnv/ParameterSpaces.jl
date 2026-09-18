@@ -1,11 +1,11 @@
 using Aqua
 using Distributions
-using ParameterSpaces
+using Paramoprh
 using ForwardDiff
 using Test
 
 @testset "Aqua" begin
-    Aqua.test_all(ParameterSpaces)
+    Aqua.test_all(Paramoprh)
 end
 
 @testset "Core parameter spaces" begin

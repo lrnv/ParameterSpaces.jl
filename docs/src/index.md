@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = ParameterSpaces
+CurrentModule = Paramoprh
 ```
 
-# ParameterSpaces
+# Paramoprh
 
-`ParameterSpaces.jl` describes parameter geometry with a deliberately tiny
+`Paramoprh.jl` describes parameter geometry with a deliberately tiny
 interface. A parameter space connects a flat unconstrained vector, suitable for
 optimization, to the natural constrained Julia values used by a model.
 
@@ -37,7 +37,7 @@ description. It is an open generic function and is normally the only function a
 downstream package extends.
 
 ```julia
-import ParameterSpaces: param_space
+import Paramoprh: param_space
 
 struct MyModel
     n::Int
@@ -234,7 +234,7 @@ spaces through the same `param_space` hook used by downstream packages. The core
 package itself has no dependency on `Distributions.jl`.
 
 ```@example distribution-types
-using ParameterSpaces
+using Paramoprh
 using Distributions
 
 X = MvNormal(zeros(3), [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0])
@@ -261,7 +261,7 @@ is implemented with ordinary generic Julia operations, so AD packages can pass
 through it directly.
 
 ```julia
-using ForwardDiff, ParameterSpaces
+using ForwardDiff, Paramoprh
 
 p = (Id(:μ), Pos(:σ))
 

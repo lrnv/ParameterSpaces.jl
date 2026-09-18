@@ -1,14 +1,14 @@
-using ParameterSpaces
+using Paramoprh
 using Documenter
 
-DocMeta.setdocmeta!(ParameterSpaces, :DocTestSetup, :(using ParameterSpaces); recursive=true)
+DocMeta.setdocmeta!(Paramoprh, :DocTestSetup, :(using Paramoprh); recursive=true)
 
 makedocs(;
-    modules=[ParameterSpaces],
+    modules=[Paramoprh],
     authors="Oskar Laverny <oskar.laverny@univ-amu.fr> and contributors",
-    sitename="ParameterSpaces.jl",
+    sitename="Paramoprh.jl",
     format=Documenter.HTML(;
-        canonical="https://lrnv.github.io/ParameterSpaces.jl",
+        canonical="https://lrnv.github.io/Paramoprh.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -18,6 +18,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/lrnv/ParameterSpaces.jl",
+    repo="github.com/lrnv/Paramoprh.jl",
     devbranch="main",
 )

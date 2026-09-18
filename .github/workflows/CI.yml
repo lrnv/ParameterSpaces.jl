@@ -70,6 +70,6 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Documenter: DocMeta, doctest
-          using ParameterSpaces
-          DocMeta.setdocmeta!(ParameterSpaces, :DocTestSetup, :(using ParameterSpaces); recursive=true)
-          doctest(ParameterSpaces)
+          using Paramoprh
+          DocMeta.setdocmeta!(Paramoprh, :DocTestSetup, :(using Paramoprh); recursive=true)
+          doctest(Paramoprh)
