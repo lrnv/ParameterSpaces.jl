@@ -26,135 +26,14 @@ geometries.
 
 ## The complete interface
 
-### `param_space`
-
 ```@docs
 param_space
-```
-
-`param_space(x)` associates an object or type with its parameter-space
-description. It is an open generic function and is normally the only function a
-downstream package extends.
-
-```julia
-import Paramorph: param_space
-
-struct MyModel
-    n::Int
-end
-
-param_space(m::MyModel) = (
-    Id(:μ),
-    Pos(:σ),
-    Simplex(:weights, m.n),
-)
-```
-
-### `dimension`
-
-```@docs
 dimension
-```
-
-`dimension(p)` is the number of scalar coordinates in the **unconstrained**
-representation. Equivalently, `constrain(p, θ)` expects
-`length(θ) == dimension(p)`.
-
-A structured constrained parameter does not change this rule. For example, a
-`3 × 3` correlation matrix has three free coordinates:
-
-```julia
-p = Correlation(:R, 3)
-dimension(p) == 3
-```
-
-### `names`
-
-```@docs
 names
-```
-
-`names(p)` returns the names of the **logical constrained parameters**. A vector
-or matrix parameter has one name, not one name per scalar entry.
-
-```julia
-p = (RealVec(:μ, 3), SPD(:Σ, 3))
-names(p)
-# (:μ, :Σ)
-```
-
-Thus `dimension(p)` counts optimizer coordinates, while `names(p)` describes the
-model-level parameter blocks. They answer different questions and need not have
-the same length.
-
-### `example`
-
-```@docs
 example
-```
-
-`example(p)` returns one canonical value in the constrained representation. It
-is defined from the origin of the unconstrained chart:
-
-```julia
-example(p) == constrain(p, zeros(dimension(p)))
-```
-
-It is intended as a convenient valid representative of the space, not as a
-statistical default or fitted value.
-
-### `constrain`
-
-```@docs
 constrain
-```
-
-`constrain(p, θ)` maps a flat unconstrained vector to its natural constrained
-representation.
-
-The output keeps the model-level Julia structure:
-
-```julia
-constrain(Pos(:σ), [0.0])
-# 1.0
-
-constrain(RealVec(:μ, 3), zeros(3))
-# [0.0, 0.0, 0.0]
-
-constrain(SPD(:Σ, 2), zeros(3))
-# [1.0 0.0; 0.0 1.0]
-```
-
-For a Cartesian product of spaces, the constrained result is a tuple of the
-logical parameter values:
-
-```julia
-p = (RealVec(:μ, 3), Pos(:σ), Correlation(:R, 3))
-η = constrain(p, zeros(dimension(p)))
-# (μ_vector, σ_scalar, R_matrix)
-```
-
-The constrained side is therefore not flattened merely for the convenience of
-an optimizer.
-
-### `unconstrain`
-
-```@docs
 unconstrain
 ```
-
-`unconstrain(p, η)` performs the inverse transformation: it accepts the natural
-constrained value and returns the flat unconstrained vector.
-
-For interior points of a chart,
-
-```julia
-θ = randn(dimension(p))
-unconstrain(p, constrain(p, θ)) ≈ θ
-```
-
-Closed boundaries may naturally correspond to infinite unconstrained
-coordinates; this is part of the geometry of the chosen space.
 
 ## Representation model
 
