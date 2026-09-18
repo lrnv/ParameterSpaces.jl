@@ -271,10 +271,10 @@ Bounded(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(true), Va
 BoundedOpen(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(false), Val(false))
 
 """A scalar parameter in `(lower, upper]`."""
-BoundedOpenLeft(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(false), Val(true))
+BoundedOpenLeft(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(false,true))
 
 """A scalar parameter in `[lower, upper)`."""
-BoundedOpenRight(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(true), Val(false))
+BoundedOpenRight(name::Symbol, lower, upper) = _bounded(name, lower, upper, Val(true,false))
 
 """Two real scalar parameters satisfying `first < second`."""
 Ordered(first::Symbol, second::Symbol) = _ordered(first, second, IdentityDomain())
@@ -541,7 +541,7 @@ function constrain(p::ScalarSpace, θ)
     return _constrain_scalar(p.domain, θ[1])
 end
 
-unconstrain(p::ScalarSpace, η::Tuple) = [_unconstrain_scalar(p.domain, η[1])]
+unconstrain(p::ScalarSpace, η::Number) = [_unconstrain_scalar(p.domain, η)]
 
 unconstrain(p::ScalarSpace, η::NTuple{1}) =
     unconstrain(p, only(η))
