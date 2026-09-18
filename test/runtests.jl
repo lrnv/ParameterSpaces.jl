@@ -49,7 +49,7 @@ end
         @test names(p) == (:μ, :σ, :β)
         @test dimension(p) == 4
         @test unconstrain(p, η) ≈ θ
-
+        nt = NamedTuple{names(p)}(η)
         @test nt == (; μ=0.5, σ=2.0, β=[3.0, 4.0])
     end
 

@@ -1,5 +1,7 @@
 module ParameterSpaces
 
+import Base.names as names
+
 export AbstractParameterSpace, param_space
 
 export Id, Pos, NonNeg, Neg, Prob, ProbOpen, ProbOpenLeft, ProbOpenRight, Lower, LowerClosed, Bounded, BoundedOpen, BoundedOpenLeft, BoundedOpenRight, Ordered, PosOrdered, Between, Simplex, SPD, Prefixed, PosVec, ProbVec, RealVec, RealMat, Correlation
