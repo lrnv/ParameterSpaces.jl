@@ -22,7 +22,9 @@ example(p)
 
 That is the complete conceptual API. Constructors such as `Pos`, `Simplex`,
 `SPD`, and `Correlation` are only vocabulary for describing different parameter
-geometries.
+geometries. Specialized spaces may additionally expose operations tied to their
+geometry; for example, `correlation_factor` returns the triangular factor used
+by a `Correlation` chart.
 
 ## The complete interface
 
@@ -113,6 +115,7 @@ RealMat
 Simplex
 SPD
 Correlation
+correlation_factor
 ```
 
 `SPD(:Σ, n)` describes an arbitrary symmetric positive-definite matrix.
