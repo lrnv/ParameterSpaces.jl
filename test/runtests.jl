@@ -22,6 +22,13 @@ end
         @test unconstrain(Prob(:p), 1.0) == [Inf]
         @test_throws DomainError unconstrain(Pos(:x), 0.0)
         @test_throws DomainError unconstrain(ProbOpen(:p), 0.0)
+
+        for θ in (-1000.0, 1000.0)
+            q = constrain(ProbOpen(:p), [θ])
+            @test 0.0 < q < 1.0
+            x = constrain(BoundedOpen(:x, -1.0, 1.0), [θ])
+            @test -1.0 < x < 1.0
+        end
     end
 
     @testset "scalar spaces tuple entries" begin

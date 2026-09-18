@@ -473,14 +473,18 @@ function _unconstrain_scalar(::NegativeExpDomain, η)
     return log(-η)
 end
 
-function _constrain_scalar(::ProbabilityDomain, θ)
-    if θ >= zero(θ)
+function _constrain_scalar(::ProbabilityDomain{LC,RC}, θ) where {LC,RC}
+    q = if θ >= zero(θ)
         z = exp(-θ)
-        return inv(one(θ) + z)
+        inv(one(θ) + z)
     else
         z = exp(θ)
-        return z / (one(θ) + z)
+        z / (one(θ) + z)
     end
+    lo, hi = zero(q), one(q)
+    !LC && q <= lo && return nextfloat(lo)
+    !RC && q >= hi && return prevfloat(hi)
+    return q
 end
 
 function _unconstrain_scalar(::ProbabilityDomain{LC,RC}, η) where {LC,RC}
@@ -508,9 +512,13 @@ function _unconstrain_scalar(d::LowerDomain{AllowEqual}, η) where {AllowEqual}
     return log(η - d.lower)
 end
 
-function _constrain_scalar(d::BoundedDomain, θ)
-    q = _constrain_scalar(ProbabilityDomain{true,true}(), θ)
-    return d.lower + (d.upper - d.lower) * q
+function _constrain_scalar(d::BoundedDomain{LC,RC}, θ) where {LC,RC}
+    q = _constrain_scalar(ProbabilityDomain{LC,RC}(), θ)
+    η = d.lower + (d.upper - d.lower) * q
+    lo, hi = oftype(η, d.lower), oftype(η, d.upper)
+    !LC && η <= lo && return nextfloat(lo)
+    !RC && η >= hi && return prevfloat(hi)
+    return η
 end
 
 function _unconstrain_scalar(d::BoundedDomain{LC,RC}, η) where {LC,RC}
