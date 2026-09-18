@@ -86,8 +86,8 @@ Prefixed
 ```
 
 Tuples of spaces form Cartesian products. Vector and matrix spaces remain one
-logical parameter each: `parameter_symbols(RealVec(:μ, 3)) == (:μ,)`, and
-`parameter_symbols(SPD(:Σ, 3)) == (:Σ,)`.
+logical parameter each: `names(RealVec(:μ, 3)) == (:μ,)`, and
+`names(SPD(:Σ, 3)) == (:Σ,)`.
 
 ## Object mapping
 
@@ -105,7 +105,7 @@ an instance for multivariate, matrix-variate, mixture, and similar models.
 using ParameterSpaces
 using Distributions
 
-parameter_symbols(param_space(Normal))
+names(param_space(Normal))
 ```
 
 For structured parameters the constrained result has the constructor-level
@@ -114,9 +114,9 @@ shape:
 ```@example distribution-types
 X = MvNormal(zeros(3), [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0])
 p = param_space(X)
-θ = unconstrained_example(p)
-η = constrained_example(p)
-(size(η[1]), size(η[2]), keys(constrained_namedtuple(p, θ)))
+θ = unconstrain(p,example(p))
+η = example(p)
+(size(η[1]), size(η[2]), names(p))
 ```
 
 For the canonical multivariate normal parameterization, the precision matrix
@@ -136,9 +136,8 @@ a scalar parameter is a scalar, a vector parameter is a vector, a structured
 matrix parameter is a full matrix, and a Cartesian product is a tuple of
 logical parameter values.
 
-Use `dimension` for the optimizer dimension, and `parameter_symbols`
-for logical parameter names. `constrained_namedtuple(p, θ)` combines those
-logical names with the natural constrained values.
+Use `dimension` for the optimizer dimension, and `names`
+for logical parameter names. You can easily conbine those logical names with the natural constrained values using `NamedTuple{names(p)}(constrain(p, θ))`
 
 ### Automatic differentiation
 

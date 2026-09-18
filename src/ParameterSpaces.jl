@@ -4,7 +4,7 @@ export AbstractParameterSpace, param_space
 
 export Id, Pos, NonNeg, Neg, Prob, ProbOpen, ProbOpenLeft, ProbOpenRight, Lower, LowerClosed, Bounded, BoundedOpen, BoundedOpenLeft, BoundedOpenRight, Ordered, PosOrdered, Between, Simplex, SPD, Prefixed, PosVec, ProbVec, RealVec, RealMat, Correlation
 
-export dimension, unconstrained_example, constrained_example, constrain, unconstrain, parameter_symbols, constrained_namedtuple
+export dimension, constrain, unconstrain, names, example
 
 """
     param_space(object)
@@ -16,6 +16,45 @@ space constructors and transformations, while downstream packages define
 methods for their own objects.
 """
 function param_space end
+
+"""
+    dimension(space)
+
+Return the dimension of the underlying unconstrained space, that is the dimension of the vector of unconstrained parameters. 
+"""
+function dimension end
+
+"""
+    names(space)
+
+Return the list of symbols corresponding to the names of the constrained parameters.
+"""
+function names end
+
+"""
+    constrain(space, par)
+
+Return the constraint version of the parameter par according to the space.
+"""
+function constrain end
+
+"""
+    unconstrain(space, par)
+
+Return the unconstraint version of the parameter par according to the space.
+"""
+function unconstrain end
+
+"""
+    example(space)
+
+Return an example of a constraint parameter from the space. 
+"""
+function example(p)
+    return constrain(p, zeros(dimension(p)))
+end
+
+
 
 abstract type AbstractParameterSpace end
 abstract type AbstractScalarDomain end
@@ -217,16 +256,16 @@ Correlation(name::Symbol, n::Integer) = Correlation{name}(n)
 # Metadata
 # ---------------------------------------------------------------------------
 
-parameter_symbols(::ScalarSpace{S}) where {S} = (S,)
-parameter_symbols(::ElementwiseSpace{S}) where {S} = (S,)
-parameter_symbols(::OrderedSpace{A,B}) where {A,B} = (A, B)
-parameter_symbols(::Between{A,B,C}) where {A,B,C} = (A, B, C)
-parameter_symbols(::NIG{M,A,B,D}) where {M,A,B,D} = (M, A, B, D)
-parameter_symbols(::Simplex{S}) where {S} = (S,)
-parameter_symbols(::SPD{S}) where {S} = (S,)
-parameter_symbols(p::ProductParameterSpace) = Tuple(s for q in p for s in parameter_symbols(q))
-parameter_symbols(p::Prefixed{P}) where {P} = Tuple(Symbol(P, "_", s) for s in parameter_symbols(p.space))
-parameter_symbols(::Correlation{S}) where {S} = (S,)
+names(::ScalarSpace{S}) where {S} = (S,)
+names(::ElementwiseSpace{S}) where {S} = (S,)
+names(::OrderedSpace{A,B}) where {A,B} = (A, B)
+names(::Between{A,B,C}) where {A,B,C} = (A, B, C)
+names(::NIG{M,A,B,D}) where {M,A,B,D} = (M, A, B, D)
+names(::Simplex{S}) where {S} = (S,)
+names(::SPD{S}) where {S} = (S,)
+names(p::ProductParameterSpace) = Tuple(s for q in p for s in names(q))
+names(p::Prefixed{P}) where {P} = Tuple(Symbol(P, "_", s) for s in names(p.space))
+names(::Correlation{S}) where {S} = (S,)
 
 
 dimension(::ScalarSpace) = 1
@@ -240,7 +279,7 @@ dimension(p::Prefixed) = dimension(p.space)
 dimension(p::ProductParameterSpace) = sum(dimension, p; init=0)
 dimension(p::Correlation) = p.n * (p.n - 1) ÷ 2
 
-_parameter_count(p) = length(parameter_symbols(p))
+_parameter_count(p) = length(names(p))
 
 # A single parameter may itself be a vector or matrix. Coupled spaces with
 # several logical parameters use a tuple, while product spaces flatten only the
@@ -656,19 +695,6 @@ function unconstrain(p::Correlation, R)
     end
 
     return θ
-end
-
-
-# ---------------------------------------------------------------------------
-# Convenience
-# ---------------------------------------------------------------------------
-
-unconstrained_example(p) = zeros(dimension(p))
-constrained_example(p) = constrain(p, unconstrained_example(p))
-
-function constrained_namedtuple(p, θ)
-    η = constrain(p, θ)
-    return NamedTuple{parameter_symbols(p)}(_parameter_values(p, η))
 end
 
 end # module

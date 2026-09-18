@@ -12,11 +12,10 @@ end
     @testset "scalar spaces" begin
         p = Pos(:σ)
         @test dimension(p) == 1
-        @test parameter_symbols(p) == (:σ,)
+        @test names(p) == (:σ,)
         @test constrain(p, [0.0]) == 1.0
         @test unconstrain(p, 1.0) == [0.0]
-        @test constrained_example(p) == 1.0
-        @test constrained_namedtuple(p, [0.0]) == (; σ=1.0)
+        @test example(p) == 1.0
 
         @test unconstrain(NonNeg(:x), 0.0) == [-Inf]
         @test unconstrain(Prob(:p), 0.0) == [-Inf]
@@ -28,9 +27,8 @@ end
     @testset "natural vector and matrix values" begin
         pv = RealVec(:μ, 3)
         @test dimension(pv) == 3
-        @test parameter_symbols(pv) == (:μ,)
+        @test names(pv) == (:μ,)
         @test constrain(pv, [1.0, 2.0, 3.0]) == [1.0, 2.0, 3.0]
-        @test constrained_namedtuple(pv, [1.0, 2.0, 3.0]) == (; μ=[1.0, 2.0, 3.0])
         @test unconstrain(pv, [1.0, 2.0, 3.0]) == [1.0, 2.0, 3.0]
 
         pm = RealMat(:A, 2, 3)
@@ -38,7 +36,7 @@ end
         @test A isa AbstractMatrix
         @test size(A) == (2, 3)
         @test A == [1.0 3.0 5.0; 2.0 4.0 6.0]
-        @test parameter_symbols(pm) == (:A,)
+        @test names(pm) == (:A,)
         @test unconstrain(pm, A) == collect(1.0:6.0)
     end
 
@@ -48,11 +46,10 @@ end
         η = constrain(p, θ)
 
         @test η == (0.5, 2.0, [3.0, 4.0])
-        @test parameter_symbols(p) == (:μ, :σ, :β)
+        @test names(p) == (:μ, :σ, :β)
         @test dimension(p) == 4
         @test unconstrain(p, η) ≈ θ
 
-        nt = constrained_namedtuple(p, θ)
         @test nt == (; μ=0.5, σ=2.0, β=[3.0, 4.0])
     end
 
@@ -76,9 +73,8 @@ end
         @test length(η) == 3
         @test sum(η) ≈ 1.0
         @test all(>(0), η)
-        @test parameter_symbols(p) == (:weights,)
+        @test names(p) == (:weights,)
         @test unconstrain(p, η) ≈ θ
-        @test constrained_namedtuple(p, θ).weights ≈ η
     end
 
     @testset "SPD values are full matrices" begin
@@ -90,10 +86,9 @@ end
         @test size(Σ) == (3, 3)
         @test Σ ≈ Σ'
         @test all(Σ[i, i] > 0 for i in axes(Σ, 1))
-        @test parameter_symbols(p) == (:Σ,)
+        @test names(p) == (:Σ,)
         @test dimension(p) == 6
         @test unconstrain(p, Σ) ≈ θ
-        @test constrained_namedtuple(p, θ).Σ ≈ Σ
 
         @test_throws DomainError unconstrain(SPD(:Σ, 2), [1.0 2.0; 2.0 1.0])
         @test_throws DomainError unconstrain(SPD(:Σ, 2), [1.0 0.1; 0.2 1.0])
@@ -102,9 +97,8 @@ end
     @testset "prefixes only change names" begin
         p = Prefixed(:base, (Id(:μ), Pos(:σ)))
         θ = [1.0, 0.0]
-        @test parameter_symbols(p) == (:base_μ, :base_σ)
+        @test names(p) == (:base_μ, :base_σ)
         @test constrain(p, θ) == (1.0, 1.0)
-        @test constrained_namedtuple(p, θ) == (; base_μ=1.0, base_σ=1.0)
     end
 end
 
@@ -119,14 +113,13 @@ end
             (Uniform(-1.0, 2.0), (:a, :b), 2),
         )
 
-        for (d, names, n) in cases
+        for (d, nms, n) in cases
             p = param_space(d)
-            @test parameter_symbols(p) == names
+            @test names(p) == nms
             @test dimension(p) == n
-            θ = unconstrained_example(p)
-            η = constrained_example(p)
+            θ = unconstrain(p,example(p))
+            η = example(p)
             @test unconstrain(p, η) ≈ θ
-            @test keys(constrained_namedtuple(p, θ)) == names
         end
     end
 
@@ -181,10 +174,9 @@ end
 
         for d in distributions
             p = param_space(d)
-            θ = unconstrained_example(p)
+            θ = unconstrain(p,example(p))
             η = constrain(p, θ)
             @test unconstrain(p, η) ≈ θ
-            @test keys(constrained_namedtuple(p, θ)) == parameter_symbols(p)
         end
     end
 
@@ -199,19 +191,18 @@ end
         )
             p = param_space(d)
             @test dimension(p) == 0
-            @test parameter_symbols(p) == ()
-            @test constrained_example(p) == ()
+            @test names(p) == ()
+            @test example(p) == ()
             @test unconstrain(p, ()) == Float64[]
         end
     end
 
     @testset "Dirichlet keeps one vector parameter" begin
         p = param_space(Dirichlet([1.0, 2.0, 3.0]))
-        @test parameter_symbols(p) == (:α,)
+        @test names(p) == (:α,)
         @test dimension(p) == 3
         α = constrain(p, log.([1.0, 2.0, 3.0]))
         @test α ≈ [1.0, 2.0, 3.0]
-        @test constrained_namedtuple(p, log.([1.0, 2.0, 3.0])) == (; α=α)
     end
 
     @testset "multivariate normal families keep natural parameter shapes" begin
@@ -219,11 +210,11 @@ end
         X = MvNormal(zeros(3), Σ0)
         p = param_space(X)
 
-        @test parameter_symbols(p) == (:μ, :Σ)
+        @test names(p) == (:μ, :Σ)
         @test dimension(p) == 9
 
-        θ = unconstrained_example(p)
-        η = constrained_example(p)
+        θ = unconstrain(p,example(p))
+        η = example(p)
         @test η isa Tuple
         @test length(η) == 2
         @test η[1] isa AbstractVector
@@ -232,24 +223,19 @@ end
         @test size(η[2]) == (3, 3)
         @test η[2] ≈ [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
 
-        nt = constrained_namedtuple(p, θ)
-        @test keys(nt) == (:μ, :Σ)
-        @test nt.μ == zeros(3)
-        @test nt.Σ ≈ [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
-
         Xcanon = MvNormalCanon([0.1, -0.2], [2.0 0.2; 0.2 1.2])
         pcanon = param_space(Xcanon)
-        @test parameter_symbols(pcanon) == (:h, :J)
+        @test names(pcanon) == (:h, :J)
         @test dimension(pcanon) == 5
-        ηcanon = constrained_example(pcanon)
+        ηcanon = example(pcanon)
         @test size(ηcanon[1]) == (2,)
         @test size(ηcanon[2]) == (2, 2)
-        @test unconstrain(pcanon, ηcanon) ≈ unconstrained_example(pcanon)
+        @test unconstrain(pcanon, ηcanon) ≈ unconstrain(pcanon,example(pcanon))
 
         Xlog = MvLogNormal(MvNormal([0.0, 0.3], [1.0 0.2; 0.2 1.5]))
         plog = param_space(Xlog)
-        @test parameter_symbols(plog) == (:μ, :Σ)
-        @test size(constrained_example(plog)[2]) == (2, 2)
+        @test names(plog) == (:μ, :Σ)
+        @test size(example(plog)[2]) == (2, 2)
     end
 
     @testset "matrix-variate shapes" begin
@@ -258,8 +244,8 @@ end
         V = [1.0 0.1 0.0; 0.1 1.0 0.2; 0.0 0.2 1.0]
         d = MatrixNormal(M, U, V)
         p = param_space(d)
-        @test parameter_symbols(p) == (:M, :U, :V)
-        η = constrained_example(p)
+        @test names(p) == (:M, :U, :V)
+        η = example(p)
         @test size(η[1]) == (2, 3)
         @test size(η[2]) == (2, 2)
         @test size(η[3]) == (3, 3)
@@ -272,7 +258,7 @@ end
             MatrixFDist(3.0, 4.0, S),
         )
             p = param_space(d)
-            θ = unconstrained_example(p)
+            θ = unconstrain(p,example(p))
             @test unconstrain(p, constrain(p, θ)) ≈ θ
         end
     end
@@ -287,7 +273,7 @@ end
         )
         for d in wrapped
             p = param_space(d)
-            θ = unconstrained_example(p)
+            θ = unconstrain(p,example(p))
             @test unconstrain(p, constrain(p, θ)) ≈ θ
         end
 
@@ -296,20 +282,20 @@ end
             [0.4, 0.6],
         )
         pmix = param_space(dmix)
-        @test parameter_symbols(pmix) == (:component1_μ, :component1_σ, :component2_μ, :component2_σ, :π)
-        θmix = unconstrained_example(pmix)
+        @test names(pmix) == (:component1_μ, :component1_σ, :component2_μ, :component2_σ, :π)
+        θmix = unconstrain(pmix, example(pmix))
         @test unconstrain(pmix, constrain(pmix, θmix)) ≈ θmix
 
         dprod = product_distribution(UnivariateDistribution[Normal(), Exponential()])
         pprod = param_space(dprod)
-        @test parameter_symbols(pprod) == (:component1_μ, :component1_σ, :component2_θ)
-        θprod = unconstrained_example(pprod)
+        @test names(pprod) == (:component1_μ, :component1_σ, :component2_θ)
+        θprod = unconstrain(pprod, example(pprod))
         @test unconstrain(pprod, constrain(pprod, θprod)) ≈ θprod
 
         dnamed = product_distribution((x=Normal(), y=Gamma(2.0, 1.0)))
         pnamed = param_space(dnamed)
-        @test parameter_symbols(pnamed) == (:x_μ, :x_σ, :y_α, :y_θ)
-        θnamed = unconstrained_example(pnamed)
+        @test names(pnamed) == (:x_μ, :x_σ, :y_α, :y_θ)
+        θnamed = unconstrain(pnamed, example(pnamed))
         @test unconstrain(pnamed, constrain(pnamed, θnamed)) ≈ θnamed
     end
 end
@@ -361,13 +347,12 @@ end
         θ = [0.2, -0.3, 0.4, 0.1, -0.2, 0.35]
         R = constrain(p, θ)
 
-        @test parameter_symbols(p) == (:R,)
+        @test names(p) == (:R,)
         @test dimension(p) == 6
         @test size(R) == (4, 4)
         @test R ≈ R'
         @test all(isapprox(R[i, i], 1.0) for i in axes(R, 1))
         @test unconstrain(p, R) ≈ θ
-        @test constrained_namedtuple(p, θ).R ≈ R
 
         g = ForwardDiff.gradient(x -> sum(abs2, constrain(p, x)), θ)
         @test length(g) == dimension(p)

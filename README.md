@@ -19,7 +19,7 @@ p = (Id(:μ), Pos(:σ), Simplex(:weights, 3))
 constrain(p, θ)
 # (0.0, 1.0, [1/3, 1/3, 1/3])
 
-constrained_namedtuple(p, θ)
+NamedTuple{names(p)}(constrain(p, θ))
 # (μ = 0.0, σ = 1.0, weights = [1/3, 1/3, 1/3])
 ```
 
@@ -37,10 +37,10 @@ parameter names.
 
 ```julia
 p = (RealVec(:μ, 3), SPD(:Σ, 3))
-parameter_symbols(p)
+names(p)
 # (:μ, :Σ)
 
-μ, Σ = constrained_example(p)
+μ, Σ = example(p)
 size(μ) # (3,)
 size(Σ) # (3, 3)
 ```
@@ -68,9 +68,9 @@ using Distributions, ParameterSpaces
 
 X = MvNormal(zeros(3), [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0])
 p = param_space(X)
-θ = unconstrained_example(p)
+θ = unconstrain(p,example(p))
 
-constrained_namedtuple(p, θ)
+NamedTuple{names(p)}(constrain(p, θ))
 # (μ = [...], Σ = [...])
 ```
 
