@@ -1,84 +1,120 @@
 # ParameterSpaces.jl
 
-`ParameterSpaces.jl` provides a small vocabulary for describing constrained
-model parameters and mapping them to unconstrained Euclidean coordinates for
-optimization.
+`ParameterSpaces.jl` does one thing: it describes how model parameters are
+represented in unconstrained Euclidean coordinates and how to map them back to
+their natural constrained Julia values.
 
-The design is intentionally asymmetric:
+The public interface is intentionally tiny: **one open hook and five operations**.
 
-- the **unconstrained** representation is always a flat vector;
+```julia
+p = param_space(x)      # associate an object with a parameter space
+
+dimension(p)            # number of unconstrained scalar coordinates
+names(p)                # logical names of the constrained parameters
+example(p)              # one canonical constrained value
+η = constrain(p, θ)     # flat unconstrained vector -> natural constrained value
+θ = unconstrain(p, η)   # natural constrained value -> flat unconstrained vector
+```
+
+That is the whole interface. Everything else exported by the package (`Pos`,
+`Simplex`, `SPD`, `Correlation`, ...) is vocabulary for describing a parameter
+space.
+
+## The two representations
+
+A parameter space connects two deliberately different representations:
+
+- the **unconstrained** representation is always a flat vector, convenient for
+  optimization and automatic differentiation;
 - the **constrained** representation keeps the natural Julia shape of each
-  parameter: scalar, vector, matrix, or coupled tuple.
+  parameter: a scalar stays a scalar, a vector stays a vector, a matrix stays a
+  matrix, and a product of logical parameters is a tuple.
 
 ```julia
 using ParameterSpaces
 
-p = (Id(:μ), Pos(:σ), Simplex(:weights, 3))
-θ = zeros(dimension(p))
+p = (
+    RealVec(:μ, 3),
+    Pos(:σ),
+    Correlation(:R, 3),
+)
 
-constrain(p, θ)
-# (0.0, 1.0, [1/3, 1/3, 1/3])
-
-NamedTuple{names(p)}(constrain(p, θ))
-# (μ = 0.0, σ = 1.0, weights = [1/3, 1/3, 1/3])
-```
-
-The inverse transformation consumes the same natural representation:
-
-```julia
-η = constrain(p, θ)
-unconstrain(p, η) ≈ θ
-```
-
-## Structured parameters
-
-Vector and matrix spaces are logical parameters, not collections of scalar
-parameter names.
-
-```julia
-p = (RealVec(:μ, 3), SPD(:Σ, 3))
 names(p)
-# (:μ, :Σ)
+# (:μ, :σ, :R)
 
-μ, Σ = example(p)
-size(μ) # (3,)
-size(Σ) # (3, 3)
+dimension(p)
+# 7
+
+θ = zeros(dimension(p))
+η = constrain(p, θ)
+# ([0.0, 0.0, 0.0], 1.0, [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+
+unconstrain(p, η) ≈ θ
+# true
 ```
 
-`SPD` returns the full symmetric positive-definite matrix. `Simplex` returns a
-probability vector. `RealMat` returns a matrix. The flat coordinates needed by
-an optimizer remain entirely on the unconstrained side.
+`names` describes the **logical parameters**, not the scalar coordinates used by
+an optimizer. Thus a vector or matrix parameter has one name:
+
+```julia
+names((RealVec(:μ, 3), SPD(:Σ, 3)))
+# (:μ, :Σ)
+```
+
+`example(p)` is simply a convenient canonical constrained value. It is obtained
+from the origin of the unconstrained chart:
+
+```julia
+example(p) == constrain(p, zeros(dimension(p)))
+```
 
 ## Open object interface
 
-`param_space` is an open generic function:
+`param_space` is the only hook downstream packages normally extend:
 
 ```julia
 import ParameterSpaces: param_space
 
 struct MyModel end
-param_space(::Type{MyModel}) = (Id(:location), Pos(:scale))
+
+param_space(::Type{MyModel}) = (
+    Id(:location),
+    Pos(:scale),
+)
 ```
 
-A `Distributions.jl` extension supplies mappings for common distributions while
-keeping the core package independent of `Distributions.jl`.
+The bundled `Distributions.jl` extension uses exactly this mechanism while the
+core package remains independent of `Distributions.jl`.
 
 ```julia
 using Distributions, ParameterSpaces
 
-X = MvNormal(zeros(3), [1.0 0.2 0.1; 0.2 1.0 0.3; 0.1 0.3 1.0])
+X = MvNormal(3, 1 / 2)
 p = param_space(X)
-θ = unconstrain(p,example(p))
 
-NamedTuple{names(p)}(constrain(p, θ))
-# (μ = [...], Σ = [...])
+names(p)
+# (:μ, :Σ)
+
+μ, Σ = example(p)
+size(μ)  # (3,)
+size(Σ)  # (3, 3)
 ```
+
+## Space vocabulary
+
+The package provides reusable spaces for common geometries: unconstrained,
+positive and negative scalars; probabilities and bounded intervals; ordered or
+coupled scalars; vectors and matrices; simplexes; symmetric positive-definite
+matrices; and correlation matrices. Tuples of spaces form Cartesian products.
+
+These types only describe geometry. The transformation interface remains the
+same five functions regardless of which spaces are composed.
 
 ## Automatic differentiation
 
-ParameterSpaces does not implement or override differentiation rules.
-`constrain` uses ordinary generic Julia operations, so automatic differentiation
-can pass through naturally:
+`ParameterSpaces.jl` does not implement differentiation rules or maintain an AD
+extension. `constrain` is ordinary generic Julia code, so differentiation can
+pass through naturally:
 
 ```julia
 using ForwardDiff
@@ -92,4 +128,4 @@ end
 ForwardDiff.gradient(f, [0.3, -0.2])
 ```
 
-There is no Jacobian API or ForwardDiff extension to maintain.
+There is no Jacobian API to learn or maintain.
