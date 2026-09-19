@@ -75,5 +75,6 @@ p.write_text(s)
 
 tests = wf.split("cat >> test/runtests.jl <<'EOF'\n", 1)[1].split("\n          EOF", 1)[0]
 tests = textwrap.dedent(tests)
+tests = tests.replace('@test ξ ≈ (0.5, 0.25)', '@test ξ == (0.5, 0.25)')
 with Path('test/runtests.jl').open('a') as io:
     io.write('\n' + tests + '\n')
