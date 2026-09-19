@@ -103,6 +103,34 @@ PosOrdered
 Between
 ```
 
+### Dependent scalar parameters
+
+`DependentProduct` is a small sequential product for cases where a later scalar
+parameter has a bound determined by an earlier constrained scalar. `GreaterThan`
+and `LowerThan` can also intersect that dynamic bound with fixed intrinsic bounds.
+This keeps simple conditional geometries explicit without introducing a general
+constraint solver.
+
+```@docs
+DependentProduct
+GreaterThan
+LowerThan
+```
+
+For example, the second parameter below is constrained to remain at least as
+large as the first while also staying in `[0, 1]`:
+
+```julia
+p = DependentProduct(
+    Bounded(:parent, 0.0, 1.0),
+    GreaterThan(:child, :parent; lower=0.0, upper=1.0),
+)
+
+parent, child = constrain(p, zeros(2))
+parent <= child
+# true
+```
+
 ### Vector, matrix, and structured spaces
 
 ```@docs
