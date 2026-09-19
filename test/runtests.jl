@@ -377,3 +377,38 @@ end
 
 end
 
+
+
+@testset "dependent scalar parameter spaces" begin
+    p = DependentProduct(
+        LowerClosed(:parent, 0.0),
+        GreaterThan(:child, :parent; lower=1.0),
+    )
+    @test names(p) == (:parent, :child)
+    @test dimension(p) == 2
+    η = constrain(p, [0.0, 0.0])
+    @test η == (1.0, 2.0)
+    @test unconstrain(p, η) ≈ [0.0, 0.0]
+    @test_throws DomainError unconstrain(p, (2.0, 1.5))
+
+    q = DependentProduct(
+        Bounded(:parent, 0.0, 1.0),
+        LowerThan(:child, :parent; lower=0.0, upper=1.0),
+    )
+    ξ = constrain(q, [0.0, 0.0])
+    @test ξ == (0.5, 0.25)
+    @test unconstrain(q, ξ) ≈ [0.0, 0.0]
+    @test all(isfinite, constrain(q, [2.0, -1.0]))
+
+    r = DependentProduct(
+        Bounded(:root, 0.0, 1.0),
+        GreaterThan(:middle, :root; lower=0.0, upper=1.0),
+        GreaterThan(:leaf, :middle; lower=0.0, upper=1.0),
+    )
+    vals = constrain(r, [0.0, 0.0, 0.0])
+    @test 0 <= vals[1] <= vals[2] <= vals[3] <= 1
+    @test unconstrain(r, vals) ≈ zeros(3)
+
+    @test_throws ArgumentError DependentProduct(GreaterThan(:x, :missing))
+    @test_throws ArgumentError constrain(GreaterThan(:x, :y), [0.0])
+end

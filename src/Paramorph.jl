@@ -4,7 +4,7 @@ import Base.names as names
 
 export AbstractParameterSpace, param_space
 
-export Id, Pos, NonNeg, Neg, Prob, ProbOpen, ProbOpenLeft, ProbOpenRight, Lower, LowerClosed, Bounded, BoundedOpen, BoundedOpenLeft, BoundedOpenRight, Ordered, PosOrdered, Between, Simplex, SPD, Prefixed, PosVec, NonNegVec, LowerClosedVec, ProbVec, RealVec, RealMat, Correlation
+export Id, Pos, NonNeg, Neg, Prob, ProbOpen, ProbOpenLeft, ProbOpenRight, Lower, LowerClosed, Bounded, BoundedOpen, BoundedOpenLeft, BoundedOpenRight, Ordered, PosOrdered, Between, Simplex, SPD, Prefixed, PosVec, NonNegVec, LowerClosedVec, ProbVec, RealVec, RealMat, Correlation, GreaterThan, LowerThan, DependentProduct
 
 export dimension, constrain, unconstrain, names, example, correlation_factor
 
@@ -853,5 +853,7 @@ unconstrain(p::Correlation, η::NTuple{1}) =
     unconstrain(p, only(η))
 
 
+
+include("DependentSpaces.jl")
 
 end # module
