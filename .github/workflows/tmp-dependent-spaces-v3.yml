@@ -28,3 +28,5 @@ jobs:
           git diff --cached --check
           git commit -m "Add dependent scalar parameter spaces"
           git push
+
+# retrigger after removing the malformed temporary workflow
