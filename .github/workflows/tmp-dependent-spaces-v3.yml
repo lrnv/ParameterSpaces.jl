@@ -1,0 +1,30 @@
+name: Temporary dependent parameter spaces v3
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/tmp-dependent-spaces-v3.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - run: python .github/paramorph_dependent_patch.py
+      - run: git diff --check
+      - run: julia --project --startup-file=no -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src test
+          git diff --cached --check
+          git commit -m "Add dependent scalar parameter spaces"
+          git push
