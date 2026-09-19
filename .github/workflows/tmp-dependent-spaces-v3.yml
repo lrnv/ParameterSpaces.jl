@@ -29,4 +29,4 @@ jobs:
           git commit -m "Add dependent scalar parameter spaces"
           git push
 
-# retrigger after removing the malformed temporary workflow
+# rerun after fixing the test assertion
