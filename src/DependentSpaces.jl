@@ -15,6 +15,17 @@ struct LowerThan{S,R,L,U} <: AbstractDependentScalarSpace
     upper::U
 end
 
+"""
+    DependentProduct(spaces...)
+
+A sequential product of parameter spaces in which later scalar parameters may
+reference values constrained earlier in the same product through [`GreaterThan`](@ref)
+or [`LowerThan`](@ref).
+
+Unlike an ordinary tuple product, a `DependentProduct` keeps a small constrained-value
+context while walking its component spaces. References must point to an earlier
+logical parameter name, and logical names must be unique within the product.
+"""
 struct DependentProduct{T<:Tuple} <: AbstractParameterSpace
     spaces::T
 
